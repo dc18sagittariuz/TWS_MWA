@@ -597,7 +597,9 @@ header button[onclick*="openSideMenu"]:hover{ background:rgba(255,255,255,.26)!i
         <svg id="db-donut-svg" width="90" height="90" viewBox="0 0 90 90" style="flex-shrink:0" role="img" aria-label="donut ผ่าน/ไม่ผ่าน">
           <circle cx="45" cy="45" r="36" fill="none" stroke="#F1F5F9" stroke-width="13"/>
           <circle id="db-arc" cx="45" cy="45" r="36" fill="none" stroke="#2563EB" stroke-width="13"
-            stroke-dasharray="0 226.2" stroke-dashoffset="56.5" stroke-linecap="round" transform="rotate(-90 45 45)"/>
+            stroke-dasharray="0 226.2" stroke-dashoffset="56.5" transform="rotate(-90 45 45)"/>
+          <circle id="db-arc-fail" cx="45" cy="45" r="36" fill="none" stroke="#DC2626" stroke-width="13"
+            stroke-dasharray="0 226.2" stroke-dashoffset="56.5" transform="rotate(-90 45 45)" style="display:none"/>
           <text id="db-arc-txt" x="45" y="41" text-anchor="middle" font-size="15" font-weight="700" fill="#0F172A">—</text>
           <text x="45" y="55" text-anchor="middle" font-size="9" fill="#64748B">ผ่านเกณฑ์</text>
         </svg>
@@ -996,7 +998,17 @@ function statusBact(v) {
   if (n !== null) return n > 0 ? 'bad' : 'ok';  // numeric counts: >0 = found
   return null;
 }
-// A reading "fails" if any checked parameter is 'bad'.
+// รอผล: ค่าว่าง + วันที่เก็บตั้งแต่ ต.ค. 2568 (2025-10-01) ขึ้นไป
+const BACT_START = '2025-10-01';
+function isPending(val, date) {
+  if (val && val !== '-') return false;
+  return !!date && date >= BACT_START;
+}
+function bactDisplay(val, date, statusFn) {
+  if (isPending(val, date))
+    return `<b style="color:#B45309;background:#FEF3C7;padding:1px 7px;border-radius:10px;font-size:10px">⏳ รอผล</b>`;
+  return `<b class="${cls(statusFn(val))}">${valOr(val)}</b>`;
+}
 function readingFails(r) {
   return statusPH(r.ph) === 'bad' || statusTurb(r.turb) === 'bad' || statusCl(r.cl, r.type) === 'bad'
       || statusBact(r.coliform) === 'bad' || statusBact(r.ecoli) === 'bad'
@@ -1123,7 +1135,7 @@ function renderCard(p) {
         <div class="stat"><div class="stat-val ${cls(statusTurb(r.turb))}">${valOr(r.turb)}</div><div class="stat-label">ความขุ่น NTU</div></div>
         <div class="stat"><div class="stat-val ${cls(statusPH(r.ph))}">${valOr(r.ph)}</div><div class="stat-label">pH</div></div>
       </div>
-      <div class="ecoli-row"><span>Coliform: <b class="${cls(statusBact(r.coliform))}">${valOr(r.coliform)}</b></span><span>E.coli: <b class="${cls(statusBact(r.ecoli))}">${valOr(r.ecoli)}</b></span>${r.color?`<span>สี: <b class="${cls(statusColor(r.color))}">${valOr(r.color)}</b></span>`:''}<span style="margin-left:auto;color:var(--gray)">📅 ${fmtDate(r.date)}</span></div>
+      <div class="ecoli-row"><span>Coliform: ${bactDisplay(r.coliform, r.date, statusBact)}</span><span>E.coli: ${bactDisplay(r.ecoli, r.date, statusBact)}</span>${r.color?`<span>สี: <b class="${cls(statusColor(r.color))}">${valOr(r.color)}</b></span>`:''}<span style="margin-left:auto;color:var(--gray)">📅 ${fmtDate(r.date)}</span></div>
     </div>`;
   }).join('');
   return `<div class="card">
@@ -1192,7 +1204,7 @@ function openHistory(id) {
           <span class="hr-type">${typeLabel(r.type)}${r.point ? ' <b>'+r.point+'</b>' : ''}</span>
           ${miniBadge(r)}
         </div>
-        <div class="hr-vals">คลอรีน ${v(r.cl,sc)} · ความขุ่น ${v(r.turb,st)} · pH ${v(r.ph,sp)}${r.color ? ' · สี '+v(r.color,statusColor(r.color)) : ''} · Coliform ${v(r.coliform,statusBact(r.coliform))} · E.coli ${v(r.ecoli,statusBact(r.ecoli))}</div>
+        <div class="hr-vals">คลอรีน ${v(r.cl,sc)} · ความขุ่น ${v(r.turb,st)} · pH ${v(r.ph,sp)}${r.color ? ' · สี '+v(r.color,statusColor(r.color)) : ''} · Coliform ${bactDisplay(r.coliform,r.date,statusBact)} · E.coli ${bactDisplay(r.ecoli,r.date,statusBact)}</div>
       </div>`;
     }).join('');
     return `<div class="hist-date">
@@ -1570,7 +1582,16 @@ function renderDash(fy) {
 
   // donut
   const r=36, circ=2*Math.PI*r, filled=(pct/100)*circ;
-  document.getElementById('db-arc').setAttribute('stroke-dasharray',`${filled.toFixed(1)} ${circ.toFixed(1)}`);
+  const failFilled = (fpct/100)*circ;
+  const arcEl = document.getElementById('db-arc');
+  const arcFail = document.getElementById('db-arc-fail');
+  arcEl.setAttribute('stroke-dasharray',`${filled.toFixed(2)} ${circ.toFixed(2)}`);
+  arcEl.setAttribute('stroke-dashoffset', (circ/4).toFixed(2));
+  if (failFilled > 0 && arcFail) {
+    arcFail.style.display = '';
+    arcFail.setAttribute('stroke-dasharray',`${failFilled.toFixed(2)} ${circ.toFixed(2)}`);
+    arcFail.setAttribute('stroke-dashoffset', (circ/4 - filled).toFixed(2));
+  } else if (arcFail) { arcFail.style.display = 'none'; }
   document.getElementById('db-arc-txt').textContent = pct+'%';
   document.getElementById('db-r-pass').textContent = s.pass.toLocaleString('th-TH');
   document.getElementById('db-r-fail').textContent = s.fail.toLocaleString('th-TH');
