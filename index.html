@@ -971,23 +971,16 @@ function numOf(v) {
 }
 const isDirect = t => t === 'น้ำประปาต่อตรง';
 
-// Return 'ok' | 'bad' | null(no data) for each parameter, given the row's type.
-// pH: 6.5–8.5 (all types). Turbidity: ≤ 4.0 (all). Chlorine: 0.2–2.0 (direct only).
+// Return 'ok' | 'bad' | null(no data) for each parameter
 function statusPH(v) { const n = numOf(v); if (n === null) return null; return (n >= 6.5 && n <= 8.5) ? 'ok' : 'bad'; }
-function statusTurb(v) {
-  const n = numOf(v); if (n === null) return null;
-  return (n <= 1.0) ? 'ok' : 'bad';
-}
+function statusTurb(v) { const n = numOf(v); if (n === null) return null; return (n <= 1.0) ? 'ok' : 'bad'; }
 function statusCl(v, type) {
-  if (!isDirect(type)) return null;
+  if (!isDirect(type)) return null; // คลอรีนใช้เฉพาะน้ำประปาต่อตรง
   const n = numOf(v); if (n === null) return null;
   return (n >= 0.2 && n <= 2.0) ? 'ok' : 'bad';
 }
-function statusColor(v) {
-  // เกณฑ์สีปรากฏ ≤ 15 หน่วย TCU
-  const n = numOf(v); if (n === null) return null;
-  return (n <= 15) ? 'ok' : 'bad';
-}
+function statusColor(v) { const n = numOf(v); if (n === null) return null; return (n <= 15) ? 'ok' : 'bad'; }
+function statusCond(v) { const n = numOf(v); if (n === null) return null; return (n <= 1000) ? 'ok' : 'bad'; } // สารละลาย ≤ 1000 mg/L
 // Bacteria: "พบ" = bad, "ไม่พบ" = ok, empty = no data
 function statusBact(v) {
   if (v == null || v === '' || v === '-') return null;
@@ -995,37 +988,55 @@ function statusBact(v) {
   if (s.includes('ไม่พบ')) return 'ok';
   if (s.includes('พบ')) return 'bad';
   const n = numOf(s);
-  if (n !== null) return n > 0 ? 'bad' : 'ok';  // numeric counts: >0 = found
+  if (n !== null) return n > 0 ? 'bad' : 'ok';
   return null;
 }
-// รอผล: ค่าว่าง + วันที่เก็บตั้งแต่ ต.ค. 2568 (2025-10-01) ขึ้นไป
+// ก่อน 1 ต.ค. 2025 ยังไม่มีการวิเคราะห์ coliform/ecoli
 const BACT_START = '2025-10-01';
+function hasBactAnalysis(date) { return !!date && date >= BACT_START; }
 function isPending(val, date) {
-  if (val && val !== '-') return false;
-  return !!date && date >= BACT_START;
+  if (!hasBactAnalysis(date)) return false; // ก่อน BACT_START ไม่ต้องรอผล
+  return !val || val === '-';
 }
 function bactDisplay(val, date, statusFn) {
+  if (!hasBactAnalysis(date)) return `<b style="color:#9CA3AF">-</b>`;
   if (isPending(val, date))
     return `<b style="color:#B45309;background:#FEF3C7;padding:1px 7px;border-radius:10px;font-size:10px">⏳ รอผล</b>`;
   return `<b class="${cls(statusFn(val))}">${valOr(val)}</b>`;
 }
+// ตัดสิน fail ตาม criteria จริง (ไม่ดู quality column)
 function readingFails(r) {
-  return statusPH(r.ph) === 'bad' || statusTurb(r.turb) === 'bad' || statusCl(r.cl, r.type) === 'bad'
-      || statusBact(r.coliform) === 'bad' || statusBact(r.ecoli) === 'bad'
-      || statusColor(r.color) === 'bad';
+  if (statusPH(r.ph) === 'bad')       return true;
+  if (statusTurb(r.turb) === 'bad')   return true;
+  if (statusColor(r.color) === 'bad') return true;
+  if (statusCond(r.cond) === 'bad')   return true;
+  if (isDirect(r.type) && statusCl(r.cl, r.type) === 'bad') return true;
+  // coliform/ecoli นำมาคิดเฉพาะหลัง BACT_START และมีผลแล้ว
+  if (hasBactAnalysis(r.date)) {
+    if (statusBact(r.coliform) === 'bad') return true;
+    if (statusBact(r.ecoli) === 'bad')    return true;
+  }
+  return false;
 }
 // CSS class for a value cell given its status
 function cls(st) { return st === 'bad' ? 'bad' : ''; }
-// show full text value (e.g. "น้อยกว่า 0.20"); only fall back to '-' when truly empty
+// show full text value; fall back to '-' when empty
 function valOr(v) { return (v == null || v === '') ? '-' : v; }
-// per-type pass/fail badge based on thresholds
+// รอผล = ไม่ fail แต่ยังมี pending bact (หลัง BACT_START)
 function rowIsWaiting(r) {
-  // ยังไม่ fail และ E.coli (หรือ Coliform) ยังรอผล
-  return !readingFails(r) && (isPending(r.ecoli, r.date) || isPending(r.coliform, r.date));
+  return !readingFails(r) && hasBactAnalysis(r.date) &&
+    (isPending(r.ecoli, r.date) || isPending(r.coliform, r.date));
+}
+// สถานะรวมต่อ row
+function rowStatus(r) {
+  if (readingFails(r)) return 'fail';
+  if (rowIsWaiting(r)) return 'wait';
+  return 'pass';
 }
 function miniBadge(r) {
-  if (readingFails(r)) return `<span class="mini-pass fail">ไม่ผ่านเกณฑ์</span>`;
-  if (rowIsWaiting(r))  return `<span class="mini-pass" style="background:#FEF3C7;color:#B45309">⏳ รอผล</span>`;
+  const st = rowStatus(r);
+  if (st === 'fail') return `<span class="mini-pass fail">ไม่ผ่านเกณฑ์</span>`;
+  if (st === 'wait') return `<span class="mini-pass" style="background:#FEF3C7;color:#B45309">⏳ รอผล</span>`;
   return `<span class="mini-pass pass">ผ่านเกณฑ์</span>`;
 }
 
@@ -1804,20 +1815,13 @@ function renderFamilyDash() {
   const totalPlaces = Object.values(placeTypeCount).reduce((a,b)=>a+b,0);
   document.getElementById('fdb-total').textContent = totalPlaces.toLocaleString('th-TH');
 
-  // Type stats (use quality col if present, else readingFails)
-  const hasQuality = rows.some(r=>r.quality);
+  // Type stats — ใช้ rowStatus() จาก criteria จริง ไม่ดู quality column
   const typeStats = {};
   rows.forEach(r => {
     const t = TYPE_MERGE[r.type]||null; if (!t) return;
     if (!typeStats[t]) typeStats[t] = {pass:0,fail:0,wait:0};
-    if (hasQuality) {
-      const q = r.quality||'';
-      if (q.includes('ผ่านเกณฑ์') && !q.includes('ไม่ผ่าน')) typeStats[t].pass++;
-      else if (q.includes('ไม่ผ่าน')) typeStats[t].fail++;
-      else typeStats[t].wait++;
-    } else {
-      if (readingFails(r)) typeStats[t].fail++; else typeStats[t].pass++;
-    }
+    const st = rowStatus(r);
+    typeStats[t][st]++;
   });
 
   // 3 donuts
@@ -1896,17 +1900,13 @@ function renderFamilyDash() {
     }
   });
 
-  // Step 2: นับ pass/fail/wait จาก latest row เท่านั้น
+  // Step 2: นับ pass/fail/wait จาก latest row เท่านั้น — ใช้ rowStatus() จาก criteria จริง
   const lStats = {};
   Object.values(placeTypeBest).forEach(r => {
     const t = r.type;
     if (!lStats[t]) lStats[t] = {pass:0,fail:0,wait:0};
-    if (hasQuality) {
-      const q = r.quality||'';
-      if (q.includes('ผ่านเกณฑ์') && !q.includes('ไม่ผ่าน')) lStats[t].pass++;
-      else if (q.includes('ไม่ผ่าน')) lStats[t].fail++;
-      else lStats[t].wait++;
-    } else { if(readingFails(r)) lStats[t].fail++; else lStats[t].pass++; }
+    const st = rowStatus(r);
+    lStats[t][st]++;
   });
   const lTP=Object.values(lStats).reduce((a,v)=>a+v.pass,0);
   const lTF=Object.values(lStats).reduce((a,v)=>a+v.fail,0);
