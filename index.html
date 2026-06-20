@@ -1019,9 +1019,14 @@ function cls(st) { return st === 'bad' ? 'bad' : ''; }
 // show full text value (e.g. "น้อยกว่า 0.20"); only fall back to '-' when truly empty
 function valOr(v) { return (v == null || v === '') ? '-' : v; }
 // per-type pass/fail badge based on thresholds
+function rowIsWaiting(r) {
+  // ยังไม่ fail และ E.coli (หรือ Coliform) ยังรอผล
+  return !readingFails(r) && (isPending(r.ecoli, r.date) || isPending(r.coliform, r.date));
+}
 function miniBadge(r) {
-  const fail = readingFails(r);
-  return `<span class="mini-pass ${fail?'fail':'pass'}">${fail?'ไม่ผ่านเกณฑ์':'ผ่านเกณฑ์'}</span>`;
+  if (readingFails(r)) return `<span class="mini-pass fail">ไม่ผ่านเกณฑ์</span>`;
+  if (rowIsWaiting(r))  return `<span class="mini-pass" style="background:#FEF3C7;color:#B45309">⏳ รอผล</span>`;
+  return `<span class="mini-pass pass">ผ่านเกณฑ์</span>`;
 }
 
 function showError(msg) {
@@ -1116,7 +1121,8 @@ function render() {
   document.getElementById('load-more-btn').style.display = items.length < filtered.length ? 'block' : 'none';
 }
 function renderCard(p) {
-  const pass = !p.anyFail;
+  const waiting = !p.anyFail && p.latestRows.some(rowIsWaiting);
+  const pass = !p.anyFail && !waiting;
   const id = p.uid;
   // show only readings from the latest sampling date, น้ำประปาต่อตรง first
   const typeOrder = ['น้ำประปาต่อตรง','น้ำผ่านเครื่องกรอง','น้ำผ่านเครื่องกรองจากตู้น้ำเย็น','น้ำผ่านบ่อ/ถังพักน้ำ'];
@@ -1141,7 +1147,7 @@ function renderCard(p) {
   return `<div class="card">
     <div class="card-header">
       <div class="card-name">${p.name}</div>
-      <span class="badge ${pass?'pass':'fail'}">${pass?'ผ่านเกณฑ์':'ไม่ผ่าน'}</span>
+      <span class="badge ${p.anyFail?'fail':waiting?'':'pass'}" style="${waiting?'background:#FEF3C7;color:#B45309':''}">${p.anyFail?'ไม่ผ่าน':waiting?'⏳ รอผล':'ผ่านเกณฑ์'}</span>
     </div>
     <div class="card-sub">
       เก็บล่าสุด ${fmtDate(p.latestDate)} · ${rows.length} จุดเก็บ · ทั้งหมด ${p.rows.length} ครั้ง
@@ -1799,16 +1805,9 @@ function renderFamilyDash() {
   document.getElementById('fdb-total').textContent = totalPlaces.toLocaleString('th-TH');
 
   // Type stats (use quality col if present, else readingFails)
-  // ใช้เฉพาะ latest row ต่อ (place, type) เพื่อให้ตรงกับหน้ารายงาน
   const hasQuality = rows.some(r=>r.quality);
-  const _donutBest = {};
-  rows.forEach(r => {
-    const t = TYPE_MERGE[r.type]||null; if (!t) return;
-    const pk = (r.placeCode||r.name) + '|' + t;
-    if (!_donutBest[pk] || (r.date||'') > (_donutBest[pk].date||'')) _donutBest[pk] = r;
-  });
   const typeStats = {};
-  Object.values(_donutBest).forEach(r => {
+  rows.forEach(r => {
     const t = TYPE_MERGE[r.type]||null; if (!t) return;
     if (!typeStats[t]) typeStats[t] = {pass:0,fail:0,wait:0};
     if (hasQuality) {
@@ -1817,9 +1816,7 @@ function renderFamilyDash() {
       else if (q.includes('ไม่ผ่าน')) typeStats[t].fail++;
       else typeStats[t].wait++;
     } else {
-      if (readingFails(r)) typeStats[t].fail++;
-      else if (readingPending(r)) typeStats[t].wait++;
-      else typeStats[t].pass++;
+      if (readingFails(r)) typeStats[t].fail++; else typeStats[t].pass++;
     }
   });
 
@@ -1909,11 +1906,7 @@ function renderFamilyDash() {
       if (q.includes('ผ่านเกณฑ์') && !q.includes('ไม่ผ่าน')) lStats[t].pass++;
       else if (q.includes('ไม่ผ่าน')) lStats[t].fail++;
       else lStats[t].wait++;
-    } else {
-      if (readingFails(r)) lStats[t].fail++;
-      else if (readingPending(r)) lStats[t].wait++;
-      else lStats[t].pass++;
-    }
+    } else { if(readingFails(r)) lStats[t].fail++; else lStats[t].pass++; }
   });
   const lTP=Object.values(lStats).reduce((a,v)=>a+v.pass,0);
   const lTF=Object.values(lStats).reduce((a,v)=>a+v.fail,0);
