@@ -509,7 +509,6 @@ header button[onclick*="openSideMenu"]:hover{ background:rgba(255,255,255,.26)!i
     <button class="chip active" onclick="setFilter('all', event)">ทั้งหมด</button>
     <button class="chip" onclick="setFilter('pass', event)">✓ ผ่านเกณฑ์</button>
     <button class="chip" onclick="setFilter('fail', event)">✗ ไม่ผ่าน</button>
-    <button class="chip" onclick="setFilter('pending', event)">⏳ รอผล</button>
   </div>
   <p class="result-info" id="result-info"></p>
   <div class="cards" id="cards"><div class="loading"><div class="spinner"></div>กำลังโหลดข้อมูลจาก Google Sheet…</div></div>
@@ -528,7 +527,6 @@ header button[onclick*="openSideMenu"]:hover{ background:rgba(255,255,255,.26)!i
   <div class="map-legend">
     <span><span class="legend-dot" style="background:#00875A"></span>ผ่านเกณฑ์</span>
     <span><span class="legend-dot" style="background:#C0392B"></span>ไม่ผ่าน</span>
-    <span><span class="legend-dot" style="background:#D97706"></span>รอผล</span>
     <span id="map-count" style="margin-left:auto"></span>
   </div>
   <div class="map-layers">
@@ -944,8 +942,7 @@ function groupByPlace() {
     p.latestRows = latestRows;
     // overall pass = any parameter failing its threshold on the latest date?
     p.anyFail = latestRows.some(readingFails);
-    p.anyPending = !p.anyFail && latestRows.some(readingPending);
-    p.allPass = latestRows.length > 0 && !p.anyFail && !p.anyPending;
+    p.allPass = latestRows.length > 0 && !p.anyFail;
     // which types this place has ever had (for filter chips)
     p.allTypes = new Set(p.rows.map(r => r.type || 'อื่น ๆ'));
     return p;
@@ -1017,19 +1014,14 @@ function readingFails(r) {
       || statusBact(r.coliform) === 'bad' || statusBact(r.ecoli) === 'bad'
       || statusColor(r.color) === 'bad';
 }
-function readingPending(r) {
-  if (readingFails(r)) return false;
-  return isPending(r.ecoli, r.date) || isPending(r.coliform, r.date);
-}
 // CSS class for a value cell given its status
 function cls(st) { return st === 'bad' ? 'bad' : ''; }
 // show full text value (e.g. "น้อยกว่า 0.20"); only fall back to '-' when truly empty
 function valOr(v) { return (v == null || v === '') ? '-' : v; }
 // per-type pass/fail badge based on thresholds
 function miniBadge(r) {
-  if (readingFails(r)) return `<span class="mini-pass fail">ไม่ผ่านเกณฑ์</span>`;
-  if (readingPending(r)) return `<span class="mini-pass" style="background:#FEF3C7;color:#B45309">⏳ รอผล</span>`;
-  return `<span class="mini-pass pass">ผ่านเกณฑ์</span>`;
+  const fail = readingFails(r);
+  return `<span class="mini-pass ${fail?'fail':'pass'}">${fail?'ไม่ผ่านเกณฑ์':'ผ่านเกณฑ์'}</span>`;
 }
 
 function showError(msg) {
@@ -1104,7 +1096,6 @@ function applyFilters() {
     let mf = true;
     if (currentFilter === 'pass') mf = p.allPass;
     else if (currentFilter === 'fail') mf = p.anyFail;
-    else if (currentFilter === 'pending') mf = p.anyPending;
     return matchSearch && mf;
   });
 }
@@ -1125,8 +1116,7 @@ function render() {
   document.getElementById('load-more-btn').style.display = items.length < filtered.length ? 'block' : 'none';
 }
 function renderCard(p) {
-  const hasFail = p.anyFail;
-  const hasPending = p.anyPending;
+  const pass = !p.anyFail;
   const id = p.uid;
   // show only readings from the latest sampling date, น้ำประปาต่อตรง first
   const typeOrder = ['น้ำประปาต่อตรง','น้ำผ่านเครื่องกรอง','น้ำผ่านเครื่องกรองจากตู้น้ำเย็น','น้ำผ่านบ่อ/ถังพักน้ำ'];
@@ -1151,7 +1141,7 @@ function renderCard(p) {
   return `<div class="card">
     <div class="card-header">
       <div class="card-name">${p.name}</div>
-      <span class="badge ${hasFail?'fail':hasPending?'':'pass'}" style="${hasPending?'background:#FEF3C7;color:#B45309;':''}">${hasFail?'ไม่ผ่าน':hasPending?'⏳ รอผล':'ผ่านเกณฑ์'}</span>
+      <span class="badge ${pass?'pass':'fail'}">${pass?'ผ่านเกณฑ์':'ไม่ผ่าน'}</span>
     </div>
     <div class="card-sub">
       เก็บล่าสุด ${fmtDate(p.latestDate)} · ${rows.length} จุดเก็บ · ทั้งหมด ${p.rows.length} ครั้ง
@@ -1809,9 +1799,16 @@ function renderFamilyDash() {
   document.getElementById('fdb-total').textContent = totalPlaces.toLocaleString('th-TH');
 
   // Type stats (use quality col if present, else readingFails)
+  // ใช้เฉพาะ latest row ต่อ (place, type) เพื่อให้ตรงกับหน้ารายงาน
   const hasQuality = rows.some(r=>r.quality);
-  const typeStats = {};
+  const _donutBest = {};
   rows.forEach(r => {
+    const t = TYPE_MERGE[r.type]||null; if (!t) return;
+    const pk = (r.placeCode||r.name) + '|' + t;
+    if (!_donutBest[pk] || (r.date||'') > (_donutBest[pk].date||'')) _donutBest[pk] = r;
+  });
+  const typeStats = {};
+  Object.values(_donutBest).forEach(r => {
     const t = TYPE_MERGE[r.type]||null; if (!t) return;
     if (!typeStats[t]) typeStats[t] = {pass:0,fail:0,wait:0};
     if (hasQuality) {
@@ -1820,7 +1817,9 @@ function renderFamilyDash() {
       else if (q.includes('ไม่ผ่าน')) typeStats[t].fail++;
       else typeStats[t].wait++;
     } else {
-      if (readingFails(r)) typeStats[t].fail++; else typeStats[t].pass++;
+      if (readingFails(r)) typeStats[t].fail++;
+      else if (readingPending(r)) typeStats[t].wait++;
+      else typeStats[t].pass++;
     }
   });
 
@@ -1910,7 +1909,11 @@ function renderFamilyDash() {
       if (q.includes('ผ่านเกณฑ์') && !q.includes('ไม่ผ่าน')) lStats[t].pass++;
       else if (q.includes('ไม่ผ่าน')) lStats[t].fail++;
       else lStats[t].wait++;
-    } else { if(readingFails(r)) lStats[t].fail++; else lStats[t].pass++; }
+    } else {
+      if (readingFails(r)) lStats[t].fail++;
+      else if (readingPending(r)) lStats[t].wait++;
+      else lStats[t].pass++;
+    }
   });
   const lTP=Object.values(lStats).reduce((a,v)=>a+v.pass,0);
   const lTF=Object.values(lStats).reduce((a,v)=>a+v.fail,0);
@@ -2038,9 +2041,7 @@ function placePassForFY(p, fy) {
   // Use latest date within that window
   const latestDate = rows.reduce((a, r) => (r.date||'') > a ? r.date : a, '');
   const latestRows = rows.filter(r => r.date === latestDate);
-  if (latestRows.some(readingFails)) return false;
-  if (latestRows.some(readingPending)) return 'pending';
-  return true;
+  return !latestRows.some(readingFails);
 }
 
 function redrawMapMarkers() {
@@ -2054,7 +2055,7 @@ function redrawMapMarkers() {
     const passResult = placePassForFY(p, mapFY);
     if (passResult === null) return; // place has no data in this FY — skip
     count++;
-    const fillColor = passResult === false ? '#C0392B' : passResult === 'pending' ? '#D97706' : '#00875A';
+    const fillColor = passResult ? '#00875A' : '#C0392B';
     const m = L.circleMarker(p.coord, { radius: 7, fillColor, color: '#fff', weight: 1.5, fillOpacity: 0.9, pane: 'stationPane' }).addTo(map);
     const displayDate = mapFY === 'all' ? p.latestDate :
       (rowsForFY(mapFY).filter(r=>r.name===p.name).reduce((a,r)=>(r.date||'')>a?r.date:a,''));
@@ -2067,8 +2068,7 @@ function redrawMapMarkers() {
         lines += `<br>คลอรีน ${valOr(latestR.cl)} · ขุ่น ${valOr(latestR.turb)} · pH ${valOr(latestR.ph)}`;
         if (latestR.coliform || latestR.ecoli) lines += `<br>Coliform ${latestR.coliform||'-'} · E.coli ${latestR.ecoli||'-'}`;
       }
-      const statusLabel = passResult === false ? '❌ ไม่ผ่าน' : passResult === 'pending' ? '⏳ รอผล' : '✅ ผ่านเกณฑ์';
-      lines += `<br><span style="font-size:10px;opacity:0.7">${p.rows.length} ครั้ง · ${statusLabel}</span>`;
+      lines += `<br><span style="font-size:10px;opacity:0.7">${p.rows.length} ครั้ง · ${passResult ? '✅ ผ่านเกณฑ์' : '❌ ไม่ผ่าน'}</span>`;
       tip.innerHTML = lines;
       tip.style.display = 'block';
       positionMapTip(e.originalEvent);
@@ -2076,9 +2076,7 @@ function redrawMapMarkers() {
     m.on('mousemove', function(e) { positionMapTip(e.originalEvent); });
     m.on('mouseout', function() { document.getElementById('map-hover-tip').style.display = 'none'; });
     const id = p.uid;
-    const popupStatusColor = passResult === false ? '#C0392B' : passResult === 'pending' ? '#D97706' : '#00875A';
-    const popupStatusText = passResult === false ? 'ไม่ผ่าน' : passResult === 'pending' ? '⏳ รอผล' : 'ผ่านเกณฑ์';
-    m.bindPopup(`<b>${p.name}</b><br>📅 ${fmtDate(displayDate||p.latestDate)} · ${p.latestRows.length} จุดเก็บ<br><span style="color:${popupStatusColor};font-weight:700">${popupStatusText}</span><br>
+    m.bindPopup(`<b>${p.name}</b><br>📅 ${fmtDate(displayDate||p.latestDate)} · ${p.latestRows.length} จุดเก็บ<br><span style="color:${passResult?'#00875A':'#C0392B'};font-weight:700">${passResult?'ผ่านเกณฑ์':'ไม่ผ่าน'}</span><br>
       <button onclick="openHistory('${id}')" style="margin-top:6px;padding:5px 10px;background:#0057B8;color:#fff;border:none;border-radius:6px;font-size:12px;cursor:pointer;font-family:inherit">ดูรายละเอียด</button>`);
     mapMarkers.push({ marker: m, place: p });
   });
@@ -2123,15 +2121,11 @@ function onMapSearchInput() {
   const box = document.getElementById('map-suggest');
   if (!mapSugItems.length) { hideMapSuggest(); return; }
   box.innerHTML = mapSugItems.map((p, i) => {
-    const isFail = p.anyFail;
-    const isPend = p.anyPending;
-    const bgColor = isFail ? 'var(--red-bg)' : isPend ? '#FEF3C7' : 'var(--green-bg)';
-    const txColor = isFail ? 'var(--red)' : isPend ? '#B45309' : 'var(--green)';
-    const label = isFail ? 'ไม่ผ่าน' : isPend ? 'รอผล' : 'ผ่าน';
+    const pass = !p.anyFail;
     const hl = p.name.toLowerCase().replace(q, `<b style="color:var(--blue)">${q}</b>`);
     return `<div class="map-suggest-item" onclick="jumpToMapPlace(${i})">
       <span>${hl}</span>
-      <span class="ms-badge" style="background:${bgColor};color:${txColor}">${label}</span>
+      <span class="ms-badge" style="background:${pass?'var(--green-bg)':'var(--red-bg)'};color:${pass?'var(--green)':'var(--red)'}">${pass?'ผ่าน':'ไม่ผ่าน'}</span>
     </div>`;
   }).join('');
   box.classList.add('show');
