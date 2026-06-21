@@ -79,6 +79,7 @@
   .stat-val { font-size: 13px; font-weight: 700; color: var(--blue); word-break: break-all; line-height: 1.2; }
   .stat-val.bad { color: var(--red); }
   .ecoli-row b.bad { color: var(--red); }
+  .hr-vals b.bad { color: var(--red); }
   .type-point-b { color: var(--text); font-weight: 700; }
   .stat-label { font-size: 9px; color: var(--gray); margin-top: 1px; }
   .ecoli-row { margin-top: 6px; font-size: 10px; color: var(--gray); display: flex; gap: 10px; }
@@ -1014,11 +1015,10 @@ function readingFails(r) {
   if (statusColor(r.color) === 'bad') return true;
   if (statusCond(r.cond) === 'bad')   return true;
   if (isDirect(r.type) && statusCl(r.cl, r.type) === 'bad') return true;
-  // coliform/ecoli นำมาคิดเฉพาะหลัง BACT_START และมีผลแล้ว
-  if (hasBactAnalysis(r.date)) {
-    if (statusBact(r.coliform) === 'bad') return true;
-    if (statusBact(r.ecoli) === 'bad')    return true;
-  }
+  // coliform/ecoli: ถ้ามีผล "พบ" ให้ fail เสมอทุกช่วงเวลา
+  // แต่ถ้าไม่มีข้อมูล (null/'-') ก่อน BACT_START ให้ข้ามไป ไม่ถือว่า pending
+  if (statusBact(r.coliform) === 'bad') return true;
+  if (statusBact(r.ecoli) === 'bad')    return true;
   return false;
 }
 // CSS class for a value cell given its status
