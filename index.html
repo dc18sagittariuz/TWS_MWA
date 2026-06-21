@@ -999,7 +999,10 @@ function isPending(val, date) {
   return !val || val === '-';
 }
 function bactDisplay(val, date, statusFn) {
-  if (!hasBactAnalysis(date)) return `<b style="color:#9CA3AF">-</b>`;
+  if (!hasBactAnalysis(date)) {
+    if (!val || val === '-') return `<b style="color:#9CA3AF">-</b>`;
+    return `<b class="${cls(statusFn(val))}">${valOr(val)}</b>`;
+  }
   if (isPending(val, date))
     return `<b style="color:#B45309;background:#FEF3C7;padding:1px 7px;border-radius:10px;font-size:10px">⏳ รอผล</b>`;
   return `<b class="${cls(statusFn(val))}">${valOr(val)}</b>`;
