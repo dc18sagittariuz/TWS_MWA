@@ -1424,16 +1424,18 @@ function drawKmzLayers() {
   kmzLayers.mwa = mwaGroup;
   mwaGroup.addTo(map);
 
-  // sta_area — orange polygons
-  const staGroup = L.layerGroup();
-  KMZ_STA.forEach(f => {
-    if (f.l) {
-      L.polyline(f.c, {color:'#E67E22', weight:1.5, opacity:0.7}).addTo(staGroup).bindTooltip(f.n||'', {sticky:true});
-    } else {
-      L.polygon(f.c, {color:'#E67E22', weight:1.5, opacity:0.8, fillColor:'#E67E22', fillOpacity:0.06})
-        .addTo(staGroup).bindTooltip(f.n||'', {sticky:true});
-    }
-  });
+// sta_area — orange polygons
+const staGroup = L.layerGroup();
+const STA_RNG = new Set(['มหาสวัสดิ์','บางเขน','สามเสน','ธนบุรี']);
+KMZ_STA.forEach(f => {
+  const label = (STA_RNG.has(f.n) ? 'รง.' : 'สจ.') + (f.n||'');
+  if (f.l) {
+    L.polyline(f.c, {color:'#E67E22', weight:1.5, opacity:0.7}).addTo(staGroup).bindTooltip(label, {sticky:true});
+  } else {
+    L.polygon(f.c, {color:'#E67E22', weight:1.5, opacity:0.8, fillColor:'#E67E22', fillOpacity:0.06})
+      .addTo(staGroup).bindTooltip(label, {sticky:true});
+  }
+});
   kmzLayers.sta = staGroup;
   staGroup.addTo(map);
 }
