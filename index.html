@@ -153,6 +153,11 @@
   @keyframes spin { to { transform: rotate(360deg); } }
   .err-box { margin: 20px 16px; padding: 16px; background: var(--red-bg); border-radius: 12px; color: var(--red); font-size: 13px; line-height: 1.6; }
 
+  #load-overlay { position: fixed; inset: 0; z-index: 4000; display: none; flex-direction: column; align-items: center; justify-content: center; gap: 14px; background: rgba(243,245,249,0.72); backdrop-filter: blur(2px); -webkit-backdrop-filter: blur(2px); }
+  #load-overlay.show { display: flex; }
+  #load-overlay .lo-spin { width: 44px; height: 44px; border: 3px solid #D3D8E0; border-top-color: var(--blue); border-radius: 50%; animation: spin 0.8s linear infinite; }
+  #load-overlay .lo-text { font-size: 13px; color: var(--blue); font-weight: 700; }
+
   /* ===== DASHBOARD ===== */
   .db-topbar { padding:10px 14px; background:var(--white); border-bottom:1px solid var(--border); display:flex; justify-content:space-between; align-items:center; }
   .db-updated { font-size:11px; color:var(--gray); }
@@ -492,6 +497,8 @@ header button[onclick*="openSideMenu"]:hover{ background:rgba(255,255,255,.26)!i
   <p><span id="total-count">กำลังโหลด…</span></p>
 </header>
 
+<div id="load-overlay"><div class="lo-spin"></div><div class="lo-text">กำลังโหลดข้อมูล…</div></div>
+
 <div class="tabs">
   <button class="tab active" onclick="switchTab('list', event)">รายการ</button>
   <button class="tab" onclick="switchTab('map', event)">แผนที่</button>
@@ -646,6 +653,7 @@ header button[onclick*="openSideMenu"]:hover{ background:rgba(255,255,255,.26)!i
   <div id="db-family" style="display:none">
     <div class="fdb">
       <div class="fdb-header">
+        <button onclick="saveDashJpeg(event)" title="บันทึกภาพ" style="position:absolute;top:12px;left:14px;background:rgba(255,255,255,0.16);color:white;border:none;border-radius:10px;padding:7px 12px;font-size:12px;font-family:inherit;cursor:pointer">📷 บันทึก</button>
         <div class="fdb-logos">
           <div class="fdb-logo">💧</div>
           <div class="fdb-logo">🏛️</div>
@@ -841,6 +849,7 @@ function switchProject(key) {
   loadData();
 }
 function loadData() {
+  showLoading();
   document.getElementById('total-count').textContent = 'กำลังโหลด…';
   document.getElementById('cards').innerHTML = '<div class="loading"><div class="spinner"></div>กำลังโหลดข้อมูลจาก Google Sheet…</div>';
   Papa.parse(csvUrl(CURRENT_PROJECT), {
@@ -863,8 +872,9 @@ function loadData() {
       page = 0; render();
       if (document.getElementById('view-map').classList.contains('active')) { initMap(); mapInited = true; }
       if (document.getElementById('view-dash').classList.contains('active')) initDash();
+      hideLoading();
     },
-    error: (err) => showError('โหลดข้อมูลไม่สำเร็จ: ' + err.message)
+    error: (err) => { hideLoading(); showError('โหลดข้อมูลไม่สำเร็จ: ' + err.message); }
   });
 }
 
@@ -1095,9 +1105,17 @@ function switchTab(tab, e) {
   e.target.classList.add('active');
   document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
   document.getElementById('view-' + tab).classList.add('active');
-  if (tab === 'map' && !mapInited && PLACES.length) { initMap(); mapInited = true; }
+  if ((tab === 'map' || tab === 'dash') && PLACES.length) {
+    showLoading();
+    setTimeout(() => {
+      if (tab === 'map' && !mapInited) { initMap(); mapInited = true; }
+      if (tab === 'map' && map) { buildMapFYChips(); map.invalidateSize(); }
+      if (tab === 'dash' && ROWS.length) initDash();
+      hideLoading();
+    }, 30);
+    return;
+  }
   if (tab === 'map' && map) { buildMapFYChips(); setTimeout(() => map.invalidateSize(), 100); }
-  if (tab === 'dash' && ROWS.length) initDash();
 }
 function setFilter(f, e) {
   currentFilter = f; page = 0;
@@ -2156,13 +2174,19 @@ function hideMapSuggest() { document.getElementById('map-suggest').classList.rem
 
 /* ---------- SAVE DASHBOARD AS JPEG ---------- */
 function saveDashJpeg(e) {
-  const isFamily = CURRENT_PROJECT.key === 'family';
-  const el = document.getElementById(isFamily ? 'db-family' : 'db-general');
   const btn = e.target;
   const orig = btn.textContent;
   btn.textContent = '⏳ กำลังบันทึก…';
   btn.disabled = true;
-  html2canvas(el, { backgroundColor: '#F3F5F9', scale: 2, useCORS: true, scrollY: -window.scrollY })
+  const header = document.getElementById('main-header');
+  const dash = document.getElementById(CURRENT_PROJECT.key === 'family' ? 'db-family' : 'db-general');
+  const wrap = document.createElement('div');
+  wrap.style.cssText = 'position:absolute;left:-9999px;top:0;width:' + dash.offsetWidth + 'px;background:#F3F5F9';
+  wrap.appendChild(header.cloneNode(true));
+  wrap.appendChild(dash.cloneNode(true));
+  wrap.querySelectorAll('button[onclick*="saveDashJpeg"], .refresh-btn, button[onclick*="openSideMenu"]').forEach(b => b.style.display = 'none');
+  document.body.appendChild(wrap);
+  html2canvas(wrap, { backgroundColor: '#F3F5F9', scale: 2, useCORS: true })
     .then(canvas => {
       const link = document.createElement('a');
       link.download = `dashboard-${CURRENT_PROJECT.key}-${new Date().toISOString().slice(0,10)}.jpg`;
@@ -2170,8 +2194,10 @@ function saveDashJpeg(e) {
       link.click();
     })
     .catch(() => alert('บันทึกภาพไม่สำเร็จ'))
-    .finally(() => { btn.textContent = orig; btn.disabled = false; });
+    .finally(() => { document.body.removeChild(wrap); btn.textContent = orig; btn.disabled = false; });
 }
+function showLoading() { document.getElementById('load-overlay').classList.add('show'); }
+function hideLoading() { document.getElementById('load-overlay').classList.remove('show'); }
 </script>
 </body>
 </html>
