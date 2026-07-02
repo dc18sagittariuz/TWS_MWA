@@ -1914,20 +1914,10 @@ function renderFamilyDash() {
   // นับสถานที่ไม่ซ้ำ (unique places) โดยดูจากวันล่าสุดของแต่ละสถานที่+ประเภทน้ำ
   const leftTypes = ['น้ำประปาต่อตรง','น้ำผ่านบ่อ/ถังพักน้ำ','น้ำผ่านเครื่องกรอง','น้ำผ่านเครื่องกรองจากตู้น้ำเย็น'];
 
-  // Step 1: หา latest row ต่อ (place, type) pair
-  const placeTypeBest = {}; // key = placeId+'|'+type → latest row
+  // นับทุกรายการ (เหมือน donut) แต่ไม่ merge ประเภทเครื่องกรอง — ใช้ rowStatus() จาก criteria จริง
+  const lStats = {};
   rows.forEach(r => {
     const t = r.type; if (!leftTypes.includes(t)) return;
-    const pk = (r.placeCode||r.name) + '|' + t;
-    if (!placeTypeBest[pk] || (r.date||'') > (placeTypeBest[pk].date||'')) {
-      placeTypeBest[pk] = r;
-    }
-  });
-
-  // Step 2: นับ pass/fail/wait จาก latest row เท่านั้น — ใช้ rowStatus() จาก criteria จริง
-  const lStats = {};
-  Object.values(placeTypeBest).forEach(r => {
-    const t = r.type;
     if (!lStats[t]) lStats[t] = {pass:0,fail:0,wait:0};
     const st = rowStatus(r);
     lStats[t][st]++;
