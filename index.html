@@ -653,7 +653,7 @@ header button[onclick*="openSideMenu"]:hover{ background:rgba(255,255,255,.26)!i
   <div id="db-family" style="display:none">
     <div class="fdb">
       <div class="fdb-header">
-        <button onclick="saveDashJpeg(event)" title="บันทึกภาพ" style="position:absolute;top:12px;left:14px;background:rgba(255,255,255,0.16);color:white;border:none;border-radius:10px;padding:7px 12px;font-size:12px;font-family:inherit;cursor:pointer">📷 บันทึก</button>
+        <button onclick="saveDashJpeg(event)" title="บันทึกภาพ" style="position:absolute;top:12px;left:50%;transform:translateX(-50%);background:rgba(255,255,255,0.16);color:white;border:none;border-radius:10px;padding:7px 14px;font-size:12px;font-family:inherit;cursor:pointer;white-space:nowrap">📷 บันทึกภาพ</button>
         <div class="fdb-logos">
           <div class="fdb-logo">💧</div>
           <div class="fdb-logo">🏛️</div>
@@ -2180,21 +2180,32 @@ function saveDashJpeg(e) {
   btn.disabled = true;
   const header = document.getElementById('main-header');
   const dash = document.getElementById(CURRENT_PROJECT.key === 'family' ? 'db-family' : 'db-general');
-  const wrap = document.createElement('div');
-  wrap.style.cssText = 'position:absolute;left:-9999px;top:0;width:' + dash.offsetWidth + 'px;background:#F3F5F9';
-  wrap.appendChild(header.cloneNode(true));
-  wrap.appendChild(dash.cloneNode(true));
-  wrap.querySelectorAll('button[onclick*="saveDashJpeg"], .refresh-btn, button[onclick*="openSideMenu"]').forEach(b => b.style.display = 'none');
-  document.body.appendChild(wrap);
-  html2canvas(wrap, { backgroundColor: '#F3F5F9', scale: 2, useCORS: true })
-    .then(canvas => {
-      const link = document.createElement('a');
-      link.download = `dashboard-${CURRENT_PROJECT.key}-${new Date().toISOString().slice(0,10)}.jpg`;
-      link.href = canvas.toDataURL('image/jpeg', 0.92);
-      link.click();
-    })
-    .catch(() => alert('บันทึกภาพไม่สำเร็จ'))
-    .finally(() => { document.body.removeChild(wrap); btn.textContent = orig; btn.disabled = false; });
+  const holder = document.createElement('div');
+  holder.id = '_capHolder';
+  holder.style.cssText = 'background:#F3F5F9;width:' + dash.offsetWidth + 'px';
+  const parent = dash.parentNode;
+  const marker = document.createComment('cap');
+  parent.insertBefore(marker, dash);
+  holder.appendChild(header.cloneNode(true));
+  holder.appendChild(dash);
+  document.body.insertBefore(holder, document.body.firstChild);
+  html2canvas(holder, {
+    backgroundColor: '#F3F5F9', scale: 2, useCORS: true,
+    onclone: (doc) => {
+      doc.querySelectorAll('#_capHolder button[onclick*="saveDashJpeg"], #_capHolder .refresh-btn, #_capHolder button[onclick*="openSideMenu"]').forEach(b => b.style.display = 'none');
+    }
+  }).then(canvas => {
+    const link = document.createElement('a');
+    link.download = `dashboard-${CURRENT_PROJECT.key}-${new Date().toISOString().slice(0,10)}.jpg`;
+    link.href = canvas.toDataURL('image/jpeg', 0.92);
+    link.click();
+  }).catch(() => alert('บันทึกภาพไม่สำเร็จ'))
+  .finally(() => {
+    parent.insertBefore(dash, marker);
+    marker.remove();
+    holder.remove();
+    btn.textContent = orig; btn.disabled = false;
+  });
 }
 function showLoading() { document.getElementById('load-overlay').classList.add('show'); }
 function hideLoading() { document.getElementById('load-overlay').classList.remove('show'); }
