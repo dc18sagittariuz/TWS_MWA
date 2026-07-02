@@ -7,6 +7,7 @@
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css" />
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Thai:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
@@ -76,7 +77,6 @@
   .stats-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }
   .stat { text-align: center; background: var(--bg); border-radius: 7px; padding: 6px 4px; min-width: 0; }
   .stat-val { font-size: 13px; font-weight: 700; color: var(--blue); overflow-wrap: break-word; word-break: break-word; line-height: 1.3; display: block; }
-  .stat-val { font-size: 13px; font-weight: 700; color: var(--blue); word-break: break-all; line-height: 1.2; }
   .stat-val.bad { color: var(--red); }
   .ecoli-row b.bad { color: var(--red); }
   .hr-vals b.bad { color: var(--red); }
@@ -559,9 +559,12 @@ header button[onclick*="openSideMenu"]:hover{ background:rgba(255,255,255,.26)!i
   <div id="db-general">
   <div class="db-topbar">
     <div class="db-updated" id="db-updated">กำลังโหลด…</div>
-    <select class="db-fy-sel" id="db-fy-sel" onchange="renderDash(this.value)">
-      <option value="all">ทุกปี</option>
-    </select>
+    <div style="display:flex;gap:8px;align-items:center">
+      <button class="db-fy-sel" onclick="saveDashJpeg(event)" title="บันทึกภาพ" style="cursor:pointer">📷 บันทึก</button>
+      <select class="db-fy-sel" id="db-fy-sel" onchange="renderDash(this.value)">
+        <option value="all">ทุกปี</option>
+      </select>
+    </div>
   </div>
 
   <div class="db-hero-row">
@@ -859,6 +862,7 @@ function loadData() {
         `${PLACES.length.toLocaleString('th-TH')} สถานที่ · ${ROWS.length.toLocaleString('th-TH')} รายการ · อัปเดตสด`;
       page = 0; render();
       if (document.getElementById('view-map').classList.contains('active')) { initMap(); mapInited = true; }
+      if (document.getElementById('view-dash').classList.contains('active')) initDash();
     },
     error: (err) => showError('โหลดข้อมูลไม่สำเร็จ: ' + err.message)
   });
@@ -1224,7 +1228,7 @@ function openHistory(id) {
           <span class="hr-type">${typeLabel(r.type)}${r.point ? ' <b>'+r.point+'</b>' : ''}</span>
           ${miniBadge(r)}
         </div>
-        <div class="hr-vals">คลอรีน ${v(r.cl,sc)} · ความขุ่น ${v(r.turb,st)} · pH ${v(r.ph,sp)}${r.color ? ' · สี '+v(r.color,statusColor(r.color)) : ''} · Coliform ${bactDisplay(r.coliform,r.date,statusBact)} · E.coli ${bactDisplay(r.ecoli,r.date,statusBact)}</div>
+        <div class="hr-vals">คลอรีน ${v(r.cl,sc)} · ความขุ่น ${v(r.turb,st)} · pH ${v(r.ph,sp)}${r.cond ? ' · นำไฟฟ้า '+v(r.cond,statusCond(r.cond)) : ''}${r.iron ? ' · เหล็ก '+valOr(r.iron) : ''}${r.color ? ' · สี '+v(r.color,statusColor(r.color)) : ''} · Coliform ${bactDisplay(r.coliform,r.date,statusBact)} · E.coli ${bactDisplay(r.ecoli,r.date,statusBact)}</div>
       </div>`;
     }).join('');
     return `<div class="hist-date">
@@ -1362,9 +1366,6 @@ function chartBlock(title, unit, dates, series, color, band, valUnit, isBact) {
   const yBot = isBact ? '0' : lo.toFixed(1);
   const yLabels = `<text x="${pad.l-3}" y="${(pad.t+4).toFixed(0)}" font-size="8" fill="#9CA3AF" text-anchor="end">${yTop}</text>
     <text x="${pad.l-3}" y="${(H-pad.b+1).toFixed(0)}" font-size="8" fill="#9CA3AF" text-anchor="end">${yBot}</text>`;
-  if (isBact) {
-    const ymid=yOf(0.5);
-  }
   const fmtD = d => d ? d.slice(5) : '';
   const xLabels = `<text x="${xOf(0).toFixed(1)}" y="${H-7}" font-size="8" fill="#9CA3AF" text-anchor="middle">${fmtD(pts[0].d)}</text>
     ${n>1?`<text x="${xOf(n-1).toFixed(1)}" y="${H-7}" font-size="8" fill="#9CA3AF" text-anchor="middle">${fmtD(pts[n-1].d)}</text>`:''}`;
@@ -1461,7 +1462,7 @@ function closeModal() {
 /* ===== DASHBOARD ===== */
 const DB_PARAM_COLORS = {
   'Coliform':'#DC2626','E.coli':'#DC2626','โคลิฟอร์ม':'#DC2626','อีโคไล':'#DC2626',
-  'ความขุ่น':'#D97706','คลอรีน':'#D97706','สีปรากฏ':'#D97706','pH':'#6B7280'
+  'ความขุ่น':'#D97706','คลอรีน':'#D97706','สีปรากฏ':'#D97706','การนำไฟฟ้า':'#D97706','pH':'#6B7280'
 };
 const DB_PARAM_CLS = {'Coliform':'r','E.coli':'r','โคลิฟอร์ม':'r','อีโคไล':'r'};
 
@@ -1523,6 +1524,7 @@ function computeStats(rows) {
     if (statusCl(r.cl,r.type) === 'bad')         addParam('คลอรีน');
     if (statusTurb(r.turb) === 'bad')             addParam('ความขุ่น');
     if (statusColor(r.color) === 'bad')           addParam('สีปรากฏ');
+    if (statusCond(r.cond) === 'bad')             addParam('การนำไฟฟ้า');
     const ckey = r.coliform ? (r.coliform.includes('ลิฟ') ? 'โคลิฟอร์ม' : 'Coliform') : null;
     if (ckey && statusBact(r.coliform) === 'bad') addParam(ckey);
     const ekey = r.ecoli ? (r.ecoli.includes('โค') ? 'อีโคไล' : 'E.coli') : null;
@@ -1551,6 +1553,7 @@ function computeStats(rows) {
       if (statusCl(r.cl,r.type)==='bad') whichFail.push('คลอรีน');
       if (statusTurb(r.turb)==='bad') whichFail.push('ความขุ่น');
       if (statusColor(r.color)==='bad') whichFail.push('สีปรากฏ');
+      if (statusCond(r.cond)==='bad') whichFail.push('การนำไฟฟ้า');
       if (statusBact(r.coliform)==='bad') whichFail.push(r.coliform.includes('ลิฟ')?'โคลิฟอร์ม':'Coliform');
       if (statusBact(r.ecoli)==='bad') whichFail.push(r.ecoli.includes('โค')?'อีโคไล':'E.coli');
       latestFails.push({name:r.name, date:fmtDate(r.date), branch:r.branch||'', params:whichFail});
@@ -2059,7 +2062,7 @@ function redrawMapMarkers() {
       (rowsForFY(mapFY).filter(r=>r.name===p.name).reduce((a,r)=>(r.date||'')>a?r.date:a,''));
     m.on('mouseover', function(e) {
       const tip = document.getElementById('map-hover-tip');
-      const latestR = p.latestRows[0];
+      const latestR = mapFY==='all' ? p.latestRows[0] : p.rows.find(r=>r.date===displayDate);
       let lines = `<b style="font-size:13px">${p.name}</b>`;
       lines += `<br><span style="opacity:0.75">📅 ${fmtDate(displayDate||p.latestDate)}</span>`;
       if (latestR) {
@@ -2119,8 +2122,9 @@ function onMapSearchInput() {
   const box = document.getElementById('map-suggest');
   if (!mapSugItems.length) { hideMapSuggest(); return; }
   box.innerHTML = mapSugItems.map((p, i) => {
-    const pass = !p.anyFail;
-    const hl = p.name.toLowerCase().replace(q, `<b style="color:var(--blue)">${q}</b>`);
+    const pass = placePassForFY(p, mapFY) !== false;
+    const idx = p.name.toLowerCase().indexOf(q);
+    const hl = idx>=0 ? p.name.slice(0,idx)+'<b style="color:var(--blue)">'+p.name.slice(idx,idx+q.length)+'</b>'+p.name.slice(idx+q.length) : p.name;
     return `<div class="map-suggest-item" onclick="jumpToMapPlace(${i})">
       <span>${hl}</span>
       <span class="ms-badge" style="background:${pass?'var(--green-bg)':'var(--red-bg)'};color:${pass?'var(--green)':'var(--red)'}">${pass?'ผ่าน':'ไม่ผ่าน'}</span>
@@ -2149,6 +2153,25 @@ function jumpToMapPlace(i) {
   if (entry) setTimeout(() => entry.marker.openPopup(), 200);
 }
 function hideMapSuggest() { document.getElementById('map-suggest').classList.remove('show'); mapSugIdx = -1; }
+
+/* ---------- SAVE DASHBOARD AS JPEG ---------- */
+function saveDashJpeg(e) {
+  const isFamily = CURRENT_PROJECT.key === 'family';
+  const el = document.getElementById(isFamily ? 'db-family' : 'db-general');
+  const btn = e.target;
+  const orig = btn.textContent;
+  btn.textContent = '⏳ กำลังบันทึก…';
+  btn.disabled = true;
+  html2canvas(el, { backgroundColor: '#F3F5F9', scale: 2, useCORS: true, scrollY: -window.scrollY })
+    .then(canvas => {
+      const link = document.createElement('a');
+      link.download = `dashboard-${CURRENT_PROJECT.key}-${new Date().toISOString().slice(0,10)}.jpg`;
+      link.href = canvas.toDataURL('image/jpeg', 0.92);
+      link.click();
+    })
+    .catch(() => alert('บันทึกภาพไม่สำเร็จ'))
+    .finally(() => { btn.textContent = orig; btn.disabled = false; });
+}
 </script>
 </body>
 </html>
