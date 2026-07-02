@@ -605,13 +605,7 @@ header button[onclick*="openSideMenu"]:hover{ background:rgba(255,255,255,.26)!i
     <div class="db-sec-title">สัดส่วนผลการตรวจ</div>
     <div class="db-wcard">
       <div class="db-donut-row">
-        <svg id="db-donut-svg" width="90" height="90" viewBox="0 0 90 90" style="flex-shrink:0" role="img" aria-label="donut ผ่าน/ไม่ผ่าน">
-          <circle cx="45" cy="45" r="36" fill="none" stroke="#F1F5F9" stroke-width="13"/>
-          <path id="db-arc" fill="none" stroke="#2563EB" stroke-width="13" d=""/>
-          <path id="db-arc-fail" fill="none" stroke="#DC2626" stroke-width="13" d="" style="display:none"/>
-          <text id="db-arc-txt" x="45" y="41" text-anchor="middle" font-size="15" font-weight="700" fill="#0F172A">—</text>
-          <text x="45" y="55" text-anchor="middle" font-size="9" fill="#64748B">ผ่านเกณฑ์</text>
-        </svg>
+        <canvas id="db-donut-canvas" width="90" height="90" style="flex-shrink:0" role="img" aria-label="donut ผ่าน/ไม่ผ่าน"></canvas>
         <div class="db-donut-legend">
           <div class="db-dleg"><span class="db-dleg-l"><span class="db-dleg-dot" id="db-dot-pass"></span>ผ่านเกณฑ์</span><span class="db-dleg-v" id="db-r-pass">—</span></div>
           <div class="db-dleg"><span class="db-dleg-l"><span class="db-dleg-dot" style="background:#DC2626"></span>ไม่ผ่าน</span><span class="db-dleg-v" id="db-r-fail">—</span></div>
@@ -1603,7 +1597,6 @@ function renderDash(fy) {
     el.style.background = i===0 ? (isFountain?'#0E7C5A':'#0057B8') : (isFountain?'#0A5B43':'#003D85');
   });
   document.getElementById('db-dot-pass').style.background = projColor;
-  document.getElementById('db-arc').style.stroke = projColor;
 
   // numbers
   const tot = s.pass + s.fail;
@@ -1621,24 +1614,10 @@ function renderDash(fy) {
   document.getElementById('db-fy-label').textContent = fy==='all' ? 'ข้อมูลทั้งหมด' : 'ปีงบประมาณ '+fy;
   document.getElementById('db-updated').textContent = `${CURRENT_PROJECT.name} · ${s.total.toLocaleString('th-TH')} รายการ`;
 
-  // donut (path arcs — html2canvas-safe)
-  const r=36, cx=45, cy=45;
-  const dArc = (startFrac, lenFrac) => {
-    if (lenFrac <= 0) return '';
-    const a0=-Math.PI/2+startFrac*2*Math.PI; let a1=a0+lenFrac*2*Math.PI;
-    const large=lenFrac>0.5?1:0; if(lenFrac>=0.999)a1=a0+1.999*Math.PI;
-    return `M ${(cx+r*Math.cos(a0)).toFixed(2)} ${(cy+r*Math.sin(a0)).toFixed(2)} A ${r} ${r} 0 ${large} 1 ${(cx+r*Math.cos(a1)).toFixed(2)} ${(cy+r*Math.sin(a1)).toFixed(2)}`;
-  };
-  const arcEl = document.getElementById('db-arc');
-  const arcFail = document.getElementById('db-arc-fail');
-  arcEl.setAttribute('d', dArc(0, pct/100));
-  arcEl.removeAttribute('stroke-dasharray'); arcEl.removeAttribute('stroke-dashoffset'); arcEl.removeAttribute('transform');
-  if (fpct > 0 && arcFail) {
-    arcFail.style.display = '';
-    arcFail.setAttribute('d', dArc(pct/100, fpct/100));
-    arcFail.removeAttribute('stroke-dasharray'); arcFail.removeAttribute('stroke-dashoffset'); arcFail.removeAttribute('transform');
-  } else if (arcFail) { arcFail.style.display = 'none'; }
-  document.getElementById('db-arc-txt').textContent = pct+'%';
+  drawDonut('db-donut-canvas', 90, 36, 13, [
+    {frac: pct/100, color: projColor},
+    {frac: fpct/100, color: '#DC2626'}
+  ], pct+'%', 'ผ่านเกณฑ์');
   document.getElementById('db-r-pass').textContent = s.pass.toLocaleString('th-TH');
   document.getElementById('db-r-fail').textContent = s.fail.toLocaleString('th-TH');
 
@@ -1863,40 +1842,20 @@ function renderFamilyDash() {
     {key:'ถังพัก/บ่อพัก', label:'ถังพัก/บ่อพัก'},
     {key:'เครื่องกรอง', label:'เครื่องกรอง'},
   ];
-  document.getElementById('fdb-donuts').innerHTML = donutDefs.map(dt => {
+  const _fdbDonutQueue = [];
+  document.getElementById('fdb-donuts').innerHTML = donutDefs.map((dt, di) => {
     const v = typeStats[dt.key]||{pass:0,fail:0,wait:0};
     const tot = v.pass+v.fail+v.wait;
     if (!tot) return `<div class="fdb-donut-card"><div class="fdb-donut-name">${dt.label}</div><div style="font-size:11px;color:#9CA3AF;margin-top:8px">ไม่มีข้อมูล</div></div>`;
-    // Compute arcs from REAL counts (not rounded %) to avoid phantom gray gap
-    const R=48, sw=12, circ=2*Math.PI*R, cx=60, cy=60, sz=120;
-    const passArc = (v.pass/tot)*circ;
-    const failArc = (v.fail/tot)*circ;
-    const waitArc = (v.wait/tot)*circ;
     const pp = Math.round(v.pass/tot*100);
     const fp = Math.round(v.fail/tot*100);
     const wp = v.wait===0 ? 0 : Math.max(1, 100-pp-fp);
-    const off = (circ/4).toFixed(1);
     const safeKey = dt.key.replace(/'/g,"\\'");
-    const arcPath = (startFrac, lenFrac, color) => {
-      if (lenFrac <= 0) return '';
-      const a0 = -Math.PI/2 + startFrac*2*Math.PI;
-      let a1 = a0 + lenFrac*2*Math.PI;
-      const large = lenFrac > 0.5 ? 1 : 0;
-      if (lenFrac >= 0.999) a1 = a0 + 1.999*Math.PI;
-      const x0=(cx+R*Math.cos(a0)).toFixed(2), y0=(cy+R*Math.sin(a0)).toFixed(2);
-      const x1=(cx+R*Math.cos(a1)).toFixed(2), y1=(cy+R*Math.sin(a1)).toFixed(2);
-      return `<path d="M ${x0} ${y0} A ${R} ${R} 0 ${large} 1 ${x1} ${y1}" fill="none" stroke="${color}" stroke-width="${sw}"/>`;
-    };
+    const cid = `fdb-donut-c${di}`;
+    _fdbDonutQueue.push({cid, v, tot, pp});
     return `<div class="fdb-donut-card" onclick="openFdbDetail('${safeKey}')">
       <div class="fdb-donut-name">${dt.label}</div>
-      <svg width="${sz}" height="${sz}" viewBox="0 0 ${sz} ${sz}" style="display:block;margin:0 auto" role="img" aria-label="${dt.key} ผ่าน ${pp}%">
-        <circle cx="${cx}" cy="${cy}" r="${R}" fill="none" stroke="#E5E7EB" stroke-width="${sw}"/>
-        ${arcPath(0, v.pass/tot, '#22C55E')}
-        ${arcPath(v.pass/tot, v.fail/tot, '#EF4444')}
-        ${arcPath((v.pass+v.fail)/tot, v.wait/tot, '#D1D5DB')}
-        <text x="${cx}" y="${cy-4}" text-anchor="middle" font-size="18" font-weight="700" fill="#0F172A">${pp}%</text>
-        <text x="${cx}" y="${cy+14}" text-anchor="middle" font-size="10" fill="#22C55E" font-weight="600">ผ่านเกณฑ์</text>
-      </svg>
+      <canvas id="${cid}" width="120" height="120" style="display:block;margin:0 auto" role="img" aria-label="${dt.key} ผ่าน ${pp}%"></canvas>
       <div class="fdb-donut-legend">
         <div class="fdb-donut-leg"><span class="fdb-donut-leg-dot" style="background:#22C55E"></span><span>ผ่านเกณฑ์ ${v.pass.toLocaleString()} (${pp}%)</span></div>
         ${v.fail>0?`<div class="fdb-donut-leg"><span class="fdb-donut-leg-dot" style="background:#EF4444"></span><span>ไม่ผ่านเกณฑ์ ${v.fail.toLocaleString()} (${fp}%)</span></div>`:''}
@@ -1905,6 +1864,13 @@ function renderFamilyDash() {
       <div class="fdb-donut-sub">${tot.toLocaleString()} รายการ · คลิกดูรายละเอียด</div>
     </div>`;
   }).join('');
+  _fdbDonutQueue.forEach(({cid, v, tot, pp}) => {
+    drawDonut(cid, 120, 48, 12, [
+      {frac: v.pass/tot, color: '#22C55E'},
+      {frac: v.fail/tot, color: '#EF4444'},
+      {frac: v.wait/tot, color: '#D1D5DB'}
+    ], pp+'%', 'ผ่านเกณฑ์', '#22C55E');
+  });
 
   // Horizontal bar chart
   const maxBar = Math.max(...PLACE_TYPES.map(pt=>placeTypeCount[pt]||0), 1);
@@ -2182,6 +2148,35 @@ function jumpToMapPlace(i) {
 }
 function hideMapSuggest() { document.getElementById('map-suggest').classList.remove('show'); mapSugIdx = -1; }
 
+function drawDonut(canvasId, size, r, sw, segments, line1, line2, line2Color) {
+  const cv = document.getElementById(canvasId);
+  if (!cv) return;
+  const dpr = 2;
+  cv.width = size*dpr; cv.height = size*dpr;
+  cv.style.width = size+'px'; cv.style.height = size+'px';
+  const ctx = cv.getContext('2d');
+  ctx.setTransform(dpr,0,0,dpr,0,0);
+  ctx.clearRect(0,0,size,size);
+  const cx=size/2, cy=size/2;
+  ctx.lineWidth = sw; ctx.lineCap = 'butt';
+  ctx.strokeStyle = '#F1F5F9';
+  ctx.beginPath(); ctx.arc(cx,cy,r,0,Math.PI*2); ctx.stroke();
+  let start = -Math.PI/2;
+  segments.forEach(seg => {
+    if (!seg.frac || seg.frac<=0) return;
+    const end = start + seg.frac*Math.PI*2;
+    ctx.strokeStyle = seg.color;
+    ctx.beginPath(); ctx.arc(cx,cy,r,start,end); ctx.stroke();
+    start = end;
+  });
+  ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+  ctx.fillStyle = '#0F172A';
+  ctx.font = "700 15px 'Sarabun','Noto Sans Thai',sans-serif";
+  ctx.fillText(line1, cx, cy-6);
+  ctx.fillStyle = line2Color || '#64748B';
+  ctx.font = "400 9px 'Sarabun','Noto Sans Thai',sans-serif";
+  ctx.fillText(line2, cx, cy+10);
+}
 /* ---------- SAVE DASHBOARD AS JPEG ---------- */
 function svgsToImgs(root) {
   const svgs = [...root.querySelectorAll('svg')];
