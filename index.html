@@ -252,6 +252,28 @@
   .fdb-col-left { display:flex; flex-direction:column; gap:10px; }
   .fdb-col-right { display:flex; flex-direction:column; }
   @media(max-width:700px) { .fdb-two-col { grid-template-columns:1fr; } .fdb-donuts { flex-direction:column; } }
+
+  /* ===== FAMILY: single-screen 1920x1080 on wide displays ===== */
+  @media(min-width:1400px) {
+    #db-family .fdb { min-height:auto; padding-bottom:0; height:calc(100vh - 112px); display:flex; flex-direction:column; overflow:hidden; }
+    #db-family .fdb-header { padding:12px 24px; flex-shrink:0; }
+    #db-family .fdb-filters { flex-direction:row; gap:20px; padding:10px 24px; flex-shrink:0; }
+    #db-family .fdb-filter-row { flex:1; }
+    #db-family .fdb-filter-label { width:auto; }
+    #db-family .fdb-filter-sel { font-size:13px; padding:7px 10px; }
+    #db-family .fdb-body { flex:1; min-height:0; display:grid; grid-template-columns:1.15fr 0.85fr; grid-template-rows:auto 1fr; gap:14px; padding:14px 24px 20px; }
+    #db-family .fdb-donuts { grid-column:1 / -1; margin-bottom:0; }
+    #db-family .fdb-donut-card { padding:12px 10px 8px; }
+    #db-family .fdb-donut-name { font-size:13px; min-height:20px; margin-bottom:6px; }
+    #db-family canvas[id^="fdb-donut-c"] { width:130px !important; height:130px !important; }
+    #db-family .fdb-two-col { grid-column:1 / -1; grid-template-columns:1.15fr 0.85fr; gap:14px; min-height:0; }
+    #db-family .fdb-col-left, #db-family .fdb-col-right { min-height:0; }
+    #db-family .fdb-col-right .fdb-table-card { display:flex; flex-direction:column; min-height:0; }
+    #db-family .fdb-col-right .fdb-table-card > div:not(.fdb-table-title) { overflow:auto; }
+    #db-family .fdb-bar-card, #db-family .fdb-table-card { margin-bottom:0; }
+    #db-family .fdb-table th, #db-family .fdb-table td { padding:7px 10px; font-size:12px; }
+  }
+
   /* Donut detail modal */
   .fdb-detail-overlay { display:none; position:fixed; inset:0; background:rgba(0,0,0,0.45); z-index:3000; align-items:flex-end; }
   .fdb-detail-overlay.show { display:flex; }
