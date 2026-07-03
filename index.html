@@ -464,6 +464,37 @@ header button[onclick*="openSideMenu"]:hover{ background:rgba(255,255,255,.26)!i
 /* ---- Map chrome ---- */
 .map-search, .map-fy-bar, .map-layers{ padding:12px 14px; border-bottom:1px solid var(--border); }
 .map-legend{ display:flex; align-items:center; gap:16px; padding:11px 14px; font-size:11.5px; color:var(--gray); border-bottom:1px solid var(--border); }
+
+/* ===== FDB v2 ===== */
+.fdb{ background:#F2F7FE; }
+.fdb-hero{ margin:14px 16px 0; background:linear-gradient(100deg,#EAF3FF,#F8FBFF 65%); border:1px solid #DCEAFB; border-radius:18px; padding:16px 20px; display:flex; align-items:center; justify-content:space-between; gap:14px; }
+.fdb-hero-title{ font-size:20px; font-weight:800; color:#1D4ED8; letter-spacing:-.3px; }
+.fdb-hero-sub{ font-size:12px; color:#64748B; margin-top:3px; }
+.fdb-total-card{ background:#fff; border:1px solid #DCEAFB; border-radius:16px; padding:10px 22px; text-align:center; box-shadow:0 8px 22px -12px rgba(29,78,216,.35); flex-shrink:0; }
+.fdb-total-card .lbl{ font-size:11.5px; color:#334155; font-weight:600; }
+.fdb-total-card .val{ font-size:40px; font-weight:800; color:#1D4ED8; line-height:1.05; }
+.fdb-filters{ position:sticky; top:0; z-index:20; margin:12px 16px 0; background:#fff; border:1px solid #DCEAFB; border-radius:14px; padding:10px 14px; flex-direction:row; flex-wrap:wrap; align-items:center; gap:12px; box-shadow:0 4px 14px -10px rgba(16,24,40,.25); }
+.fdb-filter-row{ flex:1; min-width:180px; }
+.fdb-filter-label{ width:auto; font-weight:600; }
+.fdb-filter-sel{ font-size:13px; padding:8px 10px; border-radius:9px; font-weight:600; }
+.fdb-reset{ border:1.5px solid #DCEAFB; background:#fff; color:#64748B; border-radius:9px; padding:7px 12px; font-size:12px; font-family:inherit; cursor:pointer; }
+.fdb-reset:hover{ color:#1D4ED8; border-color:#93C5FD; }
+.fdb-donut-card{ border-radius:16px; }
+.fdb-donut-name{ font-size:14px; margin-bottom:6px; }
+.fdb-dc-row{ display:flex; align-items:center; justify-content:center; gap:12px; margin:2px 0 4px; }
+.fdb-dc-icon{ width:52px; height:52px; border-radius:50%; background:#EAF3FF; display:flex; align-items:center; justify-content:center; font-size:24px; flex-shrink:0; }
+.fdb-donut-legend{ text-align:left; gap:6px; }
+.fdb-donut-leg{ font-size:11.5px; }
+.fdb-donut-sub{ margin-top:6px; }
+.fdb-bar-row{ display:flex; align-items:center; gap:10px; margin-bottom:10px; }
+.fdb-bar-row .lbl{ width:86px; flex-shrink:0; font-size:12px; color:#334155; }
+.fdb-bar-row .track{ flex:1; height:10px; background:#E2ECFA; border-radius:20px; overflow:hidden; }
+.fdb-bar-row .fill{ height:100%; border-radius:20px; background:#2563EB; transition:width .4s; }
+.fdb-bar-row .num{ width:48px; text-align:right; font-size:13px; font-weight:800; color:#0F172A; }
+.fdb-table-title{ background:transparent; color:#0F172A; font-size:13px; padding:12px 14px 6px; }
+.fdb-table th{ background:#F1F6FE; color:#1D4ED8; }
+.fdb-table tr:hover td{ background:#F8FBFF; }
+@media(max-width:700px){ .fdb-hero{ flex-direction:column; text-align:center; } .fdb-filters{ flex-direction:column; align-items:stretch; } }
 .map-fy-chip, .layer-btn{ border-radius:20px; border:1.5px solid var(--border); font-weight:600; padding:6px 13px; }
 .map-fy-chip.active{ background:var(--blue); border-color:var(--blue); color:#fff; }
 #map{ height:calc(100vh - 270px); }
@@ -670,15 +701,15 @@ header button[onclick*="openSideMenu"]:hover{ background:rgba(255,255,255,.26)!i
   <!-- Family dashboard -->
   <div id="db-family" style="display:none">
     <div class="fdb">
-      <div class="fdb-header" style="display:flex;align-items:center;justify-content:space-between;padding:10px 16px">
-        <button onclick="saveDashJpeg(event)" title="บันทึกภาพ" style="position:absolute;top:6px;left:50%;transform:translateX(-50%);background:rgba(255,255,255,0.16);color:white;border:none;border-radius:10px;padding:5px 12px;font-size:11px;font-family:inherit;cursor:pointer;white-space:nowrap">📷 บันทึกภาพ</button>
+      <div class="fdb-hero">
         <div>
-          <div class="fdb-title" style="font-size:16px">โครงการครอบครัวน้ำประปา</div>
-          <div class="fdb-sub" style="font-size:11px">ฝ่ายคุณภาพน้ำ การประปานครหลวง</div>
+          <div class="fdb-hero-title">โครงการครอบครัวน้ำประปา</div>
+          <div class="fdb-hero-sub">ฝ่ายคุณภาพน้ำ การประปานครหลวง · <span id="fdb-meta"></span></div>
         </div>
-        <div class="fdb-total-badge" style="position:static;flex-shrink:0">
-          <div class="fdb-total-label">ครอบครัวน้ำประปา (แห่ง)</div>
-          <div class="fdb-total-val" id="fdb-total">—</div>
+        <button onclick="saveDashJpeg(event)" title="บันทึกภาพ" style="background:#EAF3FF;color:#1D4ED8;border:none;border-radius:10px;padding:8px 12px;font-size:12px;font-family:inherit;cursor:pointer">📷</button>
+        <div class="fdb-total-card">
+          <div class="lbl">ครอบครัวน้ำประปา (แห่ง)</div>
+          <div class="val" id="fdb-total">—</div>
         </div>
       </div>
 
@@ -701,6 +732,7 @@ header button[onclick*="openSideMenu"]:hover{ background:rgba(255,255,255,.26)!i
             <option value="all">ทั้งหมด</option>
           </select>
         </div>
+        <button class="fdb-reset" onclick="fdbResetFilters()">↺ ล้างตัวกรอง</button>
       </div>
 
       <div class="fdb-body">
@@ -1846,6 +1878,8 @@ function renderFamilyDash() {
   });
   const totalPlaces = Object.values(placeTypeCount).reduce((a,b)=>a+b,0);
   document.getElementById('fdb-total').textContent = totalPlaces.toLocaleString('th-TH');
+  const metaEl = document.getElementById('fdb-meta');
+  if (metaEl) metaEl.textContent = rows.length.toLocaleString('th-TH') + ' รายการ';
 
   // คำนวณ lStats (ราย type ดิบ) ครั้งเดียว ใช้ร่วมกันทั้งโดนัทและตาราง
   const leftTypes = ['น้ำประปาต่อตรง','น้ำผ่านบ่อ/ถังพักน้ำ','น้ำผ่านเครื่องกรอง','น้ำผ่านเครื่องกรองจากตู้น้ำเย็น'];
@@ -1877,6 +1911,7 @@ function renderFamilyDash() {
     {key:'เครื่องกรอง', label:'เครื่องกรอง'},
   ];
   const _fdbDonutQueue = [];
+  const ICONS = {'น้ำประปาต่อตรง':'🚰','ถังพัก/บ่อพัก':'🛢️','เครื่องกรอง':'🫧'};
   document.getElementById('fdb-donuts').innerHTML = donutDefs.map((dt, di) => {
     const v = typeStats[dt.key]||{pass:0,fail:0,wait:0};
     const tot = v.pass+v.fail+v.wait;
@@ -1887,13 +1922,16 @@ function renderFamilyDash() {
     const safeKey = dt.key.replace(/'/g,"\\'");
     const cid = `fdb-donut-c${di}`;
     _fdbDonutQueue.push({cid, v, tot, pp});
-    return `<div class="fdb-donut-card" onclick="openFdbDetail('${safeKey}')">
+    return `<div class="fdb-donut-card" onclick="openFdbDetail('${safeKey}')" role="button" tabindex="0" onkeydown="if(event.key==='Enter')openFdbDetail('${safeKey}')">
       <div class="fdb-donut-name">${dt.label}</div>
-      <canvas id="${cid}" width="120" height="120" style="display:block;margin:0 auto" role="img" aria-label="${dt.key} ผ่าน ${pp}%"></canvas>
-      <div class="fdb-donut-legend">
-        <div class="fdb-donut-leg"><span class="fdb-donut-leg-dot" style="background:#22C55E"></span><span>ผ่านเกณฑ์ ${v.pass.toLocaleString()} (${pp}%)</span></div>
-        ${v.fail>0?`<div class="fdb-donut-leg"><span class="fdb-donut-leg-dot" style="background:#EF4444"></span><span>ไม่ผ่านเกณฑ์ ${v.fail.toLocaleString()} (${fp}%)</span></div>`:''}
-        ${v.wait>0?`<div class="fdb-donut-leg"><span class="fdb-donut-leg-dot" style="background:#D1D5DB"></span><span>รอผล ${v.wait.toLocaleString()} (${wp}%)</span></div>`:''}
+      <div class="fdb-dc-row">
+        <div class="fdb-dc-icon">${ICONS[dt.key]||'💧'}</div>
+        <canvas id="${cid}" width="120" height="120" role="img" aria-label="${dt.key} ผ่าน ${pp}%"></canvas>
+        <div class="fdb-donut-legend">
+          <div class="fdb-donut-leg"><span class="fdb-donut-leg-dot" style="background:#22C55E"></span><span>ผ่านเกณฑ์ ${v.pass.toLocaleString()} (${pp}%)</span></div>
+          ${v.fail>0?`<div class="fdb-donut-leg"><span class="fdb-donut-leg-dot" style="background:#EF4444"></span><span>ไม่ผ่านเกณฑ์ ${v.fail.toLocaleString()} (${fp}%)</span></div>`:''}
+          ${v.wait>0?`<div class="fdb-donut-leg"><span class="fdb-donut-leg-dot" style="background:#D1D5DB"></span><span>รอผล ${v.wait.toLocaleString()} (${wp}%)</span></div>`:''}
+        </div>
       </div>
       <div class="fdb-donut-sub">${tot.toLocaleString()} รายการ · คลิกดูรายละเอียด</div>
     </div>`;
@@ -1909,17 +1947,8 @@ function renderFamilyDash() {
   // Horizontal bar chart
   const maxBar = Math.max(...PLACE_TYPES.map(pt=>placeTypeCount[pt]||0), 1);
   document.getElementById('fdb-bars').innerHTML = PLACE_TYPES.map(pt => {
-    const cnt = placeTypeCount[pt]||0;
-    const w = Math.round(cnt/maxBar*100);
-    return `<div style="margin-bottom:6px">
-      <div style="display:flex;justify-content:space-between;margin-bottom:3px">
-        <span style="font-size:11px;color:#64748B">${pt}</span>
-        <span style="font-size:12px;font-weight:700;color:#1D4ED8">${cnt.toLocaleString()}</span>
-      </div>
-      <div style="background:#DBEAFE;border-radius:20px;height:12px;overflow:hidden">
-        <div style="height:100%;border-radius:20px;background:#93C5FD;width:${w}%"></div>
-      </div>
-    </div>`;
+    const cnt = placeTypeCount[pt]||0, w = Math.round(cnt/maxBar*100);
+    return `<div class="fdb-bar-row"><span class="lbl">${pt}</span><div class="track"><div class="fill" style="width:${w}%"></div></div><span class="num">${cnt.toLocaleString()}</span></div>`;
   }).join('');
 
   // Left table: ประเภทน้ำ × ผ่าน/ไม่ผ่าน/รอผล
@@ -1929,7 +1958,7 @@ function renderFamilyDash() {
   const showWait = lTW > 0;
   const TLBL={'น้ำประปาต่อตรง':'1. น้ำประปาต่อตรง','น้ำผ่านบ่อ/ถังพักน้ำ':'2. น้ำผ่านบ่อ/ถังพักน้ำ','น้ำผ่านเครื่องกรอง':'3. น้ำผ่านเครื่องกรอง','น้ำผ่านเครื่องกรองจากตู้น้ำเย็น':'4. น้ำผ่านเครื่องกรองจากตู้น้ำเย็น'};
   document.getElementById('fdb-table-left').innerHTML =
-    `<tr><th>ประเภทน้ำ</th><th class="r">ผ่านเกณฑ์</th><th class="r">ไม่ผ่านเกณฑ์</th>${showWait?'<th class="r">รอผล</th>':''}<th class="r">Grand t…</th></tr>` +
+    `<tr><th>ประเภทน้ำ</th><th class="r">ผ่านเกณฑ์</th><th class="r">ไม่ผ่านเกณฑ์</th>${showWait?'<th class="r">รอผล</th>':''}<th class="r">Grand total</th></tr>` +
     leftTypes.filter(t=>lStats[t]).map(t => {
       const v=lStats[t],tot=v.pass+v.fail+v.wait;
       return `<tr><td class="bold">${TLBL[t]||t}</td><td class="r">${v.pass}</td><td class="r">${v.fail}</td>${showWait?`<td class="r">${v.wait}</td>`:''}<td class="r bold">${tot}</td></tr>`;
@@ -2253,6 +2282,7 @@ function saveDashJpeg(e) {
     btn.textContent = orig; btn.disabled = false;
   });
 }
+function fdbResetFilters(){ ['fdb-fy','fdb-month','fdb-province'].forEach(id=>document.getElementById(id).value='all'); renderFamilyDash(); }
 function showLoading() { document.getElementById('load-overlay').classList.add('show'); }
 function hideLoading() { document.getElementById('load-overlay').classList.remove('show'); }
 </script>
