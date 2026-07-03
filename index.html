@@ -240,14 +240,14 @@
   .fdb-filter-sel { flex:1; font-size:12px; padding:5px 8px; border-radius:7px; border:1px solid #DBEAFE; background:white; font-family:inherit; color:#0F172A; }
   .fdb-body { padding:10px 12px; }
   .fdb-donuts { display:flex; gap:10px; margin-bottom:12px; }
-  .fdb-donut-card { flex:1; background:white; border-radius:12px; padding:14px 10px 10px; text-align:center; border:1px solid #DBEAFE; cursor:pointer; transition:box-shadow .15s, transform .1s; }
+  .fdb-donut-card { flex:1; background:white; border-radius:12px; padding:10px 10px 8px; text-align:center; border:1px solid #DBEAFE; cursor:pointer; transition:box-shadow .15s, transform .1s; }
   .fdb-donut-card:hover { box-shadow:0 4px 16px rgba(37,99,235,0.15); transform:translateY(-2px); }
   .fdb-donut-card:active { transform:scale(0.98); }
-  .fdb-donut-name { font-size:12px; font-weight:700; color:#1D4ED8; margin-bottom:8px; line-height:1.3; min-height:32px; display:flex; align-items:center; justify-content:center; }
-  .fdb-donut-legend { display:flex; flex-direction:column; gap:4px; margin-top:8px; }
+  .fdb-donut-name { font-size:12px; font-weight:700; color:#1D4ED8; margin-bottom:2px; line-height:1.3; min-height:auto; display:flex; align-items:center; justify-content:center; }
+  .fdb-donut-legend { display:flex; flex-direction:column; gap:2px; margin-top:0; }
   .fdb-donut-leg { display:flex; align-items:center; gap:5px; font-size:10px; color:#64748B; }
   .fdb-donut-leg-dot { width:8px; height:8px; border-radius:50%; flex-shrink:0; }
-  .fdb-donut-sub { font-size:11px; color:#64748B; margin-top:6px; }
+  .fdb-donut-sub { font-size:11px; color:#64748B; margin-top:2px; }
   .fdb-two-col { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
   .fdb-col-left { display:flex; flex-direction:column; gap:10px; }
   .fdb-col-right { display:flex; flex-direction:column; }
@@ -255,23 +255,22 @@
 
   /* ===== FAMILY: single-screen 1920x1080 on wide displays ===== */
   @media(min-width:1400px) {
-    #db-family .fdb { min-height:auto; padding-bottom:0; height:calc(100vh - 112px); display:flex; flex-direction:column; overflow:hidden; }
+    #db-family .fdb { min-height:auto; padding-bottom:20px; display:flex; flex-direction:column; }
     #db-family .fdb-header { padding:12px 24px; flex-shrink:0; }
     #db-family .fdb-filters { flex-direction:row; gap:20px; padding:10px 24px; flex-shrink:0; }
     #db-family .fdb-filter-row { flex:1; }
     #db-family .fdb-filter-label { width:auto; }
     #db-family .fdb-filter-sel { font-size:13px; padding:7px 10px; }
-    #db-family .fdb-body { flex:1; min-height:0; display:grid; grid-template-columns:1.15fr 0.85fr; grid-template-rows:auto 1fr; gap:14px; padding:14px 24px 20px; }
+    #db-family .fdb-body { display:grid; grid-template-columns:1.15fr 0.85fr; grid-template-rows:auto auto; gap:14px; padding:14px 24px 20px; }
     #db-family .fdb-donuts { grid-column:1 / -1; margin-bottom:0; }
-    #db-family .fdb-donut-card { padding:12px 10px 8px; }
-    #db-family .fdb-donut-name { font-size:13px; min-height:20px; margin-bottom:6px; }
-    #db-family canvas[id^="fdb-donut-c"] { width:130px !important; height:130px !important; }
-    #db-family .fdb-two-col { grid-column:1 / -1; grid-template-columns:1.15fr 0.85fr; gap:14px; min-height:0; }
-    #db-family .fdb-col-left, #db-family .fdb-col-right { min-height:0; }
+    #db-family .fdb-donut-card { padding:8px 10px 6px; }
+    #db-family .fdb-donut-name { font-size:13px; min-height:auto; margin-bottom:2px; }
+    #db-family canvas[id^="fdb-donut-c"] { width:110px !important; height:110px !important; }
+    #db-family .fdb-two-col { grid-column:1 / -1; grid-template-columns:1.15fr 0.85fr; gap:14px; }
     #db-family .fdb-bar-card { padding:8px 14px; flex-shrink:0; }
     #db-family .fdb-col-left .fdb-table-card,
-    #db-family .fdb-col-right .fdb-table-card { display:flex; flex-direction:column; min-height:0; flex:1; }
-    #db-family .fdb-table-card .fdb-table { display:block; overflow-y:auto; min-height:0; }
+    #db-family .fdb-col-right .fdb-table-card { display:flex; flex-direction:column; }
+    #db-family .fdb-table-card .fdb-table { display:table; width:100%; table-layout:fixed; }
     #db-family .fdb-bar-card, #db-family .fdb-table-card { margin-bottom:0; }
     #db-family .fdb-table th, #db-family .fdb-table td { padding:7px 10px; font-size:12px; }
   }
