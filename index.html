@@ -1845,13 +1845,23 @@ function renderFamilyDash() {
   const totalPlaces = Object.values(placeTypeCount).reduce((a,b)=>a+b,0);
   document.getElementById('fdb-total').textContent = totalPlaces.toLocaleString('th-TH');
 
-  // Type stats — ใช้ rowStatus() จาก criteria จริง ไม่ดู quality column
-  const typeStats = {};
+  // คำนวณ lStats (ราย type ดิบ) ครั้งเดียว ใช้ร่วมกันทั้งโดนัทและตาราง
+  const leftTypes = ['น้ำประปาต่อตรง','น้ำผ่านบ่อ/ถังพักน้ำ','น้ำผ่านเครื่องกรอง','น้ำผ่านเครื่องกรองจากตู้น้ำเย็น'];
+  const lStats = {};
   rows.forEach(r => {
-    const t = TYPE_MERGE[r.type]||null; if (!t) return;
-    if (!typeStats[t]) typeStats[t] = {pass:0,fail:0,wait:0};
+    const t = r.type; if (!leftTypes.includes(t)) return;
+    if (!lStats[t]) lStats[t] = {pass:0,fail:0,wait:0};
     const st = rowStatus(r);
-    typeStats[t][st]++;
+    lStats[t][st]++;
+  });
+  // typeStats (โดนัท) = รวมจาก lStats ตาม TYPE_MERGE เพื่อให้ตรงกับตารางเสมอ
+  const typeStats = {};
+  Object.entries(lStats).forEach(([rawType, v]) => {
+    const t = TYPE_MERGE[rawType]; if (!t) return;
+    if (!typeStats[t]) typeStats[t] = {pass:0,fail:0,wait:0};
+    typeStats[t].pass += v.pass;
+    typeStats[t].fail += v.fail;
+    typeStats[t].wait += v.wait;
   });
 
   // 3 donuts
@@ -1911,17 +1921,6 @@ function renderFamilyDash() {
   }).join('');
 
   // Left table: ประเภทน้ำ × ผ่าน/ไม่ผ่าน/รอผล
-  // นับสถานที่ไม่ซ้ำ (unique places) โดยดูจากวันล่าสุดของแต่ละสถานที่+ประเภทน้ำ
-  const leftTypes = ['น้ำประปาต่อตรง','น้ำผ่านบ่อ/ถังพักน้ำ','น้ำผ่านเครื่องกรอง','น้ำผ่านเครื่องกรองจากตู้น้ำเย็น'];
-
-  // นับทุกรายการ (เหมือน donut) แต่ไม่ merge ประเภทเครื่องกรอง — ใช้ rowStatus() จาก criteria จริง
-  const lStats = {};
-  rows.forEach(r => {
-    const t = r.type; if (!leftTypes.includes(t)) return;
-    if (!lStats[t]) lStats[t] = {pass:0,fail:0,wait:0};
-    const st = rowStatus(r);
-    lStats[t][st]++;
-  });
   const lTP=Object.values(lStats).reduce((a,v)=>a+v.pass,0);
   const lTF=Object.values(lStats).reduce((a,v)=>a+v.fail,0);
   const lTW=Object.values(lStats).reduce((a,v)=>a+v.wait,0);
