@@ -268,8 +268,10 @@
     #db-family canvas[id^="fdb-donut-c"] { width:130px !important; height:130px !important; }
     #db-family .fdb-two-col { grid-column:1 / -1; grid-template-columns:1.15fr 0.85fr; gap:14px; min-height:0; }
     #db-family .fdb-col-left, #db-family .fdb-col-right { min-height:0; }
-    #db-family .fdb-col-right .fdb-table-card { display:flex; flex-direction:column; min-height:0; }
-    #db-family .fdb-col-right .fdb-table-card > div:not(.fdb-table-title) { overflow:auto; }
+    #db-family .fdb-bar-card { padding:8px 14px; flex-shrink:0; }
+    #db-family .fdb-col-left .fdb-table-card,
+    #db-family .fdb-col-right .fdb-table-card { display:flex; flex-direction:column; min-height:0; flex:1; }
+    #db-family .fdb-table-card .fdb-table { display:block; overflow-y:auto; min-height:0; }
     #db-family .fdb-bar-card, #db-family .fdb-table-card { margin-bottom:0; }
     #db-family .fdb-table th, #db-family .fdb-table td { padding:7px 10px; font-size:12px; }
   }
@@ -1909,12 +1911,12 @@ function renderFamilyDash() {
   document.getElementById('fdb-bars').innerHTML = PLACE_TYPES.map(pt => {
     const cnt = placeTypeCount[pt]||0;
     const w = Math.round(cnt/maxBar*100);
-    return `<div style="margin-bottom:12px">
-      <div style="display:flex;justify-content:space-between;margin-bottom:5px">
-        <span style="font-size:12px;color:#64748B">${pt}</span>
-        <span style="font-size:13px;font-weight:700;color:#1D4ED8">${cnt.toLocaleString()}</span>
+    return `<div style="margin-bottom:6px">
+      <div style="display:flex;justify-content:space-between;margin-bottom:3px">
+        <span style="font-size:11px;color:#64748B">${pt}</span>
+        <span style="font-size:12px;font-weight:700;color:#1D4ED8">${cnt.toLocaleString()}</span>
       </div>
-      <div style="background:#DBEAFE;border-radius:20px;height:20px;overflow:hidden">
+      <div style="background:#DBEAFE;border-radius:20px;height:12px;overflow:hidden">
         <div style="height:100%;border-radius:20px;background:#93C5FD;width:${w}%"></div>
       </div>
     </div>`;
