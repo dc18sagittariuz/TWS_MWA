@@ -1926,19 +1926,22 @@ function openFdbDetail(key) {
 // รวบ rows ที่ fail ของพารามิเตอร์หนึ่งๆ เป็นรายชื่อสถานที่ไม่ซ้ำ เรียงวันล่าสุดก่อน
 function _paramPlaceList(param) {
   const rows = (window._fdbParamRows||{})[param]||[];
+  const allFails = window._fdbParamRows||{};
   const byPlace = {};
   rows.forEach(r => {
     const k = r.placeCode||r.name;
-    if (!byPlace[k]) byPlace[k] = {name:r.name, icon:r.placeType2==='สถานพยาบาล'?'🏥':'🏫', date:r.date, n:0};
+    if (!byPlace[k]) byPlace[k] = {name:r.name, icon:r.placeType2==='สถานพยาบาล'?'🏥':'🏫', date:r.date, n:0, tags:new Set()};
     byPlace[k].n++;
     if (r.date > byPlace[k].date) byPlace[k].date = r.date;
+    Object.keys(allFails).forEach(p => { if (p!==param && allFails[p].includes(r)) byPlace[k].tags.add(p); });
   });
   return Object.values(byPlace).sort((a,b)=>b.date.localeCompare(a.date));
 }
 function _paramRowHtml(p) {
   const pl = PLACES.find(x=>x.name===p.name);
+  const tags = [...(p.tags||[])].map(t=>`<span style="background:#FEF2F2;color:#DC2626;font-size:10px;padding:1px 6px;border-radius:6px;margin-left:4px">${t}</span>`).join('');
   return `<div style="display:flex;justify-content:space-between;gap:8px;padding:7px 4px 7px 12px;border-bottom:1px solid #F1F5F9;font-size:12px">
-    <span style="cursor:pointer;color:#1D4ED8" onclick="event.stopPropagation();${pl?`openHistory('${pl.uid}')`:''}">${p.icon} ${p.name}${p.n>1?` <b>(×${p.n})</b>`:''}</span>
+    <span style="cursor:pointer;color:#1D4ED8" onclick="event.stopPropagation();${pl?`openHistory('${pl.uid}')`:''}">${p.icon} ${p.name}${p.n>1?` <b>(×${p.n})</b>`:''}${tags}</span>
     <span style="color:#64748B;white-space:nowrap">${fmtDate(p.date)}</span>
   </div>`;
 }
@@ -1973,7 +1976,7 @@ function showAllParamPlaces(i, param) {
 async function shareParamPlaces(param) {
   const list = _paramPlaceList(param);
   const text = `❌ ${param} ไม่ผ่านเกณฑ์ ${list.length} สถานที่\n` +
-    list.map((p,i)=>`${i+1}. ${p.name}${p.n>1?` (×${p.n})`:''} — ${fmtDate(p.date)}`).join('\n');
+    list.map((p,i)=>`${i+1}. ${p.name}${p.n>1?` (×${p.n})`:''} — ${fmtDate(p.date)}${p.tags&&p.tags.size?` [${[...p.tags].join(', ')}]`:''}`).join('\n');
   if (navigator.share) { try { await navigator.share({text}); return; } catch(e){} }
   await navigator.clipboard.writeText(text);
   alert('คัดลอกรายชื่อแล้ว 📋');
