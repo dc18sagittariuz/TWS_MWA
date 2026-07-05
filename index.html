@@ -575,6 +575,8 @@ header button[onclick*="openSideMenu"]:hover{ background:rgba(255,255,255,.26)!i
     <button class="chip active" onclick="setFilter('all', event)">ทั้งหมด</button>
     <button class="chip" onclick="setFilter('pass', event)">✓ ผ่านเกณฑ์</button>
     <button class="chip" onclick="setFilter('fail', event)">✗ ไม่ผ่าน</button>
+    <select id="flt-branch" class="chip" onchange="page=0;render()" style="max-width:130px;display:none"></select>
+    <select id="flt-province" class="chip" onchange="page=0;render()" style="max-width:130px;display:none"></select>
   </div>
   <p class="result-info" id="result-info"></p>
   <div class="cards" id="cards"><div class="loading"><div class="spinner"></div>กำลังโหลดข้อมูลจาก Google Sheet…</div></div>
@@ -626,6 +628,7 @@ header button[onclick*="openSideMenu"]:hover{ background:rgba(255,255,255,.26)!i
     <div class="db-updated" id="db-updated">กำลังโหลด…</div>
     <div style="display:flex;gap:8px;align-items:center">
       <button class="db-fy-sel" onclick="saveDashJpeg(event)" title="บันทึกภาพ" style="cursor:pointer">📷 บันทึก</button>
+      <button class="db-fy-sel" onclick="exportFailsCSV()" style="cursor:pointer">⬇ CSV ไม่ผ่าน</button>
       <select class="db-fy-sel" id="db-fy-sel" onchange="renderDash(this.value)">
         <option value="all">ทุกปี</option>
       </select>
@@ -693,6 +696,12 @@ header button[onclick*="openSideMenu"]:hover{ background:rgba(255,255,255,.26)!i
 
     <div class="db-sec-title">พารามิเตอร์ที่ไม่ผ่านบ่อยที่สุด</div>
     <div class="db-wcard" id="db-params"></div>
+
+    <div class="db-sec-title">🔁 ไม่ผ่านซ้ำ 2 ครั้งล่าสุดติดกัน</div>
+    <div class="db-wcard" style="padding:14px 14px 6px" id="db-repeats"></div>
+
+    <div class="db-sec-title">📅 ไม่ได้เก็บตัวอย่างเกิน 2 ปี</div>
+    <div class="db-wcard" style="padding:14px 14px 6px" id="db-overdue"></div>
 
     <div class="db-sec-title">สถานที่ที่ไม่ผ่านเกณฑ์ล่าสุด</div>
     <div class="db-wcard" style="padding:14px 14px 6px" id="db-fails"></div>
@@ -833,7 +842,7 @@ const PROJECTS = {
 
 let CURRENT_PROJECT = PROJECTS.monitor;
 function csvUrl(proj) {
-  return `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:csv&sheet=${encodeURIComponent(proj.sheet)}&t=${Date.now()}`;
+  return `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:csv&sheet=${encodeURIComponent(proj.sheet)}&t=${new Date().toISOString().slice(0,13)}`;
 }
 
 let ROWS = [];          // normalized rows
@@ -903,7 +912,7 @@ function loadData() {
   Papa.parse(csvUrl(CURRENT_PROJECT), {
     download: true, header: false, skipEmptyLines: true,
     complete: (res) => {
-      if (!res.data || res.data.length < 2) { showError('ไม่พบข้อมูลในชีต หรือชีตยังไม่ได้แชร์เป็น "ใครมีลิงก์ดูได้"'); return; }
+      if (!res.data || res.data.length < 2) { hideLoading(); showError('ไม่พบข้อมูลในชีต หรือชีตยังไม่ได้แชร์เป็น "ใครมีลิงก์ดูได้"'); return; }
       buildHeaderMap(res.data[0], CURRENT_PROJECT.col);
       let allRows = res.data.slice(1).map(normalize).filter(r => r.name);
       // Apply project-level filter (family: only สถานศึกษา/สถานพยาบาล)
@@ -914,6 +923,7 @@ function loadData() {
       }
       ROWS = allRows;
       groupByPlace();
+      buildListFilters();
       mapInited = false;
       document.getElementById('total-count').textContent =
         `${PLACES.length.toLocaleString('th-TH')} สถานที่ · ${ROWS.length.toLocaleString('th-TH')} รายการ · อัปเดตสด`;
@@ -944,14 +954,22 @@ function buildHeaderMap(headerRow, colDef) {
 }
 function gg(row, key) { const i = headerMap[key]; return (i != null && row[i] != null) ? String(row[i]).trim() : ''; }
 function normalize(row) {
+  const date = normDate(gg(row,'date'));
   return {
     code: gg(row,'code'), placeCode: gg(row,'placeCode'), name: gg(row,'name'), type: gg(row,'type'), point: gg(row,'point'),
-    date: normDate(gg(row,'date')), cl: gg(row,'cl'), turb: gg(row,'turb'), ph: gg(row,'ph'),
+    date, cl: gg(row,'cl'), turb: gg(row,'turb'), ph: gg(row,'ph'),
     cond: gg(row,'cond'), iron: gg(row,'iron'), color: gg(row,'color'),
     coliform: gg(row,'coliform'), ecoli: gg(row,'ecoli'), quality: gg(row,'quality'),
     coord: gg(row,'coord'), branch: gg(row,'branch'),
-    placeType: gg(row,'placeType'), placeType2: gg(row,'placeType2'), province: gg(row,'province')
+    placeType: gg(row,'placeType'), placeType2: gg(row,'placeType2'), province: gg(row,'province'),
+    fy: fyOf(date)
   };
+}
+// คำนวณปีงบจากสตริงตรงๆ ไม่ต้องสร้าง Date object (เร็วกว่า, ใช้ในลูปจำนวนมาก)
+function fyOf(iso) {
+  if (!iso || !/^\d{4}-\d{2}/.test(iso)) return null;
+  const y = +iso.slice(0,4), m = +iso.slice(5,7);
+  return (m >= 10 ? y + 1 : y) + 543;
 }
 function normDate(s) {
   if (!s) return '';
@@ -1178,14 +1196,27 @@ function toggleSort() {
 }
 
 /* ---------- RENDER (place cards) ---------- */
+function buildListFilters() {
+  const fill = (id, key, label) => {
+    const vals = [...new Set(ROWS.map(r => r[key]).filter(Boolean))].sort();
+    const el = document.getElementById(id);
+    el.style.display = vals.length ? '' : 'none';
+    el.innerHTML = `<option value="all">${label}: ทั้งหมด</option>` + vals.map(v=>`<option>${v}</option>`).join('');
+  };
+  fill('flt-branch','branch','สาขา'); fill('flt-province','province','จังหวัด');
+}
 function applyFilters() {
   const q = document.getElementById('search').value.trim().toLowerCase();
+  const br = document.getElementById('flt-branch').value;
+  const pv = document.getElementById('flt-province').value;
   return PLACES.filter(p => {
     const matchSearch = !q || p.name.toLowerCase().includes(q);
     let mf = true;
     if (currentFilter === 'pass') mf = p.allPass;
     else if (currentFilter === 'fail') mf = p.anyFail;
-    return matchSearch && mf;
+    const matchBr = br==='all' || p.rows.some(r => r.branch === br);
+    const matchPv = pv==='all' || p.rows.some(r => r.province === pv);
+    return matchSearch && mf && matchBr && matchPv;
   });
 }
 function render() {
@@ -1255,8 +1286,8 @@ function jumpToMap(id) {
     return;
   }
   // Switch to map tab
-  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
-  document.querySelectorAll('.tab')[1].classList.add('active');
+  document.querySelectorAll('.tab').forEach(t =>
+    t.classList.toggle('active', t.getAttribute('onclick')?.includes("'map'")));
   document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
   document.getElementById('view-map').classList.add('active');
   if (!mapInited) { initMap(); mapInited = true; }
@@ -1533,33 +1564,16 @@ const DB_PARAM_COLORS = {
 const DB_PARAM_CLS = {'Coliform':'r','E.coli':'r','โคลิฟอร์ม':'r','อีโคไล':'r'};
 
 function getFYOptions() {
-  // fiscal year = Oct-Sep; find all FYs in ROWS
   const fys = new Set();
-  ROWS.forEach(r => {
-    if (!r.date) return;
-    const d = new Date(r.date);
-    if (isNaN(d)) return;
-    const m = d.getMonth(); // 0=Jan
-    const y = d.getFullYear();
-    const fy = (m >= 9 ? y+1 : y) + 543; // Thai Buddhist year
-    fys.add(fy);
-  });
+  ROWS.forEach(r => { if (r.fy) fys.add(r.fy); });
   return Array.from(fys).sort((a,b) => b-a);
 }
 
 function rowsForFY(fy) {
   if (fy === 'all') return ROWS;
   const fyNum = parseInt(fy);
-  // Thai FY: Oct (CE year-543) to Sep (CE year-542)
-  const startCE = fyNum - 543 - 1; // Oct of previous CE year
-  const endCE   = fyNum - 543;
   return ROWS.filter(r => {
-    if (!r.date) return false;
-    const d = new Date(r.date);
-    if (isNaN(d)) return false;
-    const y = d.getFullYear(), m = d.getMonth();
-    // Oct of startCE to Sep of endCE
-    return (y === startCE && m >= 9) || (y === endCE && m <= 8);
+    return r.fy === fyNum;
   });
 }
 
@@ -1628,6 +1642,37 @@ function computeStats(rows) {
 
   const latestDate = rows.reduce((a,r)=>(r.date||'')>(a)?r.date:a, '');
   return { pass, fail, total:rows.length, places:placesSeen.size, latestDate, typeStats, paramFails, branchStats, latestFails };
+}
+
+function exportFailsCSV() {
+  const fy = document.getElementById('db-fy-sel')?.value || 'all';
+  const fails = rowsForFY(fy).filter(readingFails);
+  if (!fails.length) return alert('ไม่มีรายการไม่ผ่านเกณฑ์');
+  const head = ['สถานที่','ประเภท','จุดเก็บ','วันที่','คลอรีน','ความขุ่น','pH','สี','นำไฟฟ้า','Coliform','E.coli','สาขา','จังหวัด'];
+  const esc = v => `"${String(v??'').replace(/"/g,'""')}"`;
+  const csv = '\uFEFF' + [head.join(','), ...fails.map(r =>
+    [r.name,r.type,r.point,fmtDate(r.date),r.cl,r.turb,r.ph,r.color,r.cond,r.coliform,r.ecoli,r.branch,r.province].map(esc).join(',')
+  )].join('\n');
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([csv], {type:'text/csv;charset=utf-8'}));
+  a.download = `fails-${CURRENT_PROJECT.key}-${fy}.csv`;
+  a.click(); URL.revokeObjectURL(a.href);
+}
+function getStaleWaits(rows, days=14) {
+  const cut = new Date(Date.now() - days*864e5).toISOString().slice(0,10);
+  return rows.filter(r => rowIsWaiting(r) && r.date < cut);
+}
+function getRepeatFails() {
+  return PLACES.filter(p => {
+    const dates = [...new Set(p.rows.map(r=>r.date))].sort((a,b)=>b.localeCompare(a)).slice(0,2);
+    return dates.length >= 2 && dates.every(d => p.rows.filter(r=>r.date===d).some(readingFails));
+  });
+}
+function getOverduePlaces(years=2) {
+  const cut = new Date(); cut.setFullYear(cut.getFullYear()-years);
+  const cutISO = cut.toISOString().slice(0,10);
+  return PLACES.filter(p => p.latestDate && p.latestDate < cutISO)
+    .sort((a,b) => a.latestDate.localeCompare(b.latestDate));
 }
 
 function buildFYSelect() {
@@ -1708,8 +1753,28 @@ function renderDash(fy) {
   }).join('');
   document.getElementById('db-type-detail').innerHTML = '';
   document.getElementById('db-type-detail').style.display = 'none';
-  _activeTypeKey = null;  document.getElementById('db-worst').innerHTML = worstType ?
-    `<div class="db-alert">⚠️ <span><b>${TYPE_SHORT[worstType[0]]||worstType[0]}</b> มีอัตราไม่ผ่านสูงสุด ${100-Math.round(worstType[1].pass/(worstType[1].pass+worstType[1].fail)*100)}%</span></div>` : '';
+  _activeTypeKey = null;  document.getElementById('db-worst').innerHTML = (worstType ?
+    `<div class="db-alert">⚠️ <span><b>${TYPE_SHORT[worstType[0]]||worstType[0]}</b> มีอัตราไม่ผ่านสูงสุด ${100-Math.round(worstType[1].pass/(worstType[1].pass+worstType[1].fail)*100)}%</span></div>` : '') +
+    (() => { const stale = getStaleWaits(rows); return stale.length ?
+      `<div class="db-alert" style="margin-top:8px;background:#FFFBEB;border-color:#FDE68A;color:#92400E">⏳ <span><b>${stale.length} รายการ</b> รอผล Coliform/E.coli เกิน 14 วัน — ควรตามผลแล็บ</span></div>` : ''; })();
+
+  const reps = getRepeatFails();
+  document.getElementById('db-repeats').innerHTML = reps.length ? reps.slice(0,8).map(p =>
+    `<div class="db-fail-item">
+      <div style="min-width:0;flex:1">
+        <div class="db-fail-name">${p.name}</div>
+        <div class="db-fail-meta">ล่าสุด ${fmtDate(p.latestDate)} · ${p.rows.length} ครั้ง</div>
+      </div>
+      <button class="db-badge r" style="border:none;cursor:pointer" onclick="openHistory('${p.uid}')">ดูประวัติ</button>
+    </div>`).join('') : '<div style="font-size:12px;color:var(--gray)">ไม่มี 🎉</div>';
+
+  const od = getOverduePlaces(2);
+  document.getElementById('db-overdue').innerHTML = od.length ?
+    `<div style="font-size:11px;color:var(--gray);margin-bottom:6px">${od.length} สถานที่</div>` +
+    od.slice(0,8).map(p => `<div class="db-fail-item">
+      <div class="db-fail-name" style="flex:1">${p.name}</div>
+      <span class="db-badge a">เก็บล่าสุด ${fmtDate(p.latestDate)}</span>
+    </div>`).join('') : '<div style="font-size:12px;color:var(--gray)">ครบทุกสถานที่ ✅</div>';
 
   // branch bars (fountain only)
   const branchSec = document.getElementById('db-branch-section');
@@ -1828,11 +1893,11 @@ function openFdbDetail(key) {
     <span class="fdb-detail-val">${item.val.toLocaleString()} รายการ</span>
   </div>`).join('');
 
-  // Param breakdown for failing rows
+  // Param breakdown for failing rows — เก็บ rows จริงไว้ด้วยเพื่อดูรายชื่อสถานที่
   const paramFails = {};
   typeRows.forEach(r => {
     if (!readingFails(r)) return;
-    const add = k => { paramFails[k]=(paramFails[k]||0)+1; };
+    const add = k => { (paramFails[k] = paramFails[k]||[]).push(r); };
     if (statusPH(r.ph)==='bad')         add('pH');
     if (statusCl(r.cl,r.type)==='bad')  add('คลอรีน');
     if (statusTurb(r.turb)==='bad')     add('ความขุ่น');
@@ -1840,19 +1905,78 @@ function openFdbDetail(key) {
     if (statusBact(r.coliform)==='bad') add(r.coliform&&r.coliform.includes('ลิฟ')?'โคลิฟอร์ม':'Coliform');
     if (statusBact(r.ecoli)==='bad')    add(r.ecoli&&r.ecoli.includes('โค')?'อีโคไล':'E.coli');
   });
-  const params = Object.entries(paramFails).sort((a,b)=>b[1]-a[1]);
+  window._fdbParamRows = paramFails;
+  _openParam = -1;
+  const params = Object.entries(paramFails).map(([k,v])=>[k,v.length]).sort((a,b)=>b[1]-a[1]);
   const maxP = params.length ? params[0][1] : 1;
   const paramsEl = document.getElementById('fdb-detail-params');
   if (params.length) {
     paramsEl.style.display = 'block';
-    document.getElementById('fdb-detail-param-bars').innerHTML = params.map(([p,cnt])=>
-      `<div class="fdb-detail-param-row">
+    document.getElementById('fdb-detail-param-bars').innerHTML = params.map(([p,cnt],i)=>
+      `<div class="fdb-detail-param-row" onclick="toggleParamPlaces(${i},'${p.replace(/'/g,"\\'")}')" style="cursor:pointer">
         <div class="fdb-detail-param-lbl">${p}</div>
         <div class="fdb-detail-param-track"><div class="fdb-detail-param-fill" style="width:${Math.round(cnt/maxP*100)}%"></div></div>
-        <div class="fdb-detail-param-num">${cnt}</div>
-      </div>`).join('');
+        <div class="fdb-detail-param-num">${cnt} ▾</div>
+      </div>
+      <div id="fdb-pp-${i}" style="display:none"></div>`).join('');
   } else { paramsEl.style.display = 'none'; }
   document.getElementById('fdb-detail-overlay').classList.add('show');
+}
+
+// รวบ rows ที่ fail ของพารามิเตอร์หนึ่งๆ เป็นรายชื่อสถานที่ไม่ซ้ำ เรียงวันล่าสุดก่อน
+function _paramPlaceList(param) {
+  const rows = (window._fdbParamRows||{})[param]||[];
+  const byPlace = {};
+  rows.forEach(r => {
+    const k = r.placeCode||r.name;
+    if (!byPlace[k]) byPlace[k] = {name:r.name, icon:r.placeType2==='สถานพยาบาล'?'🏥':'🏫', date:r.date, n:0};
+    byPlace[k].n++;
+    if (r.date > byPlace[k].date) byPlace[k].date = r.date;
+  });
+  return Object.values(byPlace).sort((a,b)=>b.date.localeCompare(a.date));
+}
+function _paramRowHtml(p) {
+  const pl = PLACES.find(x=>x.name===p.name);
+  return `<div style="display:flex;justify-content:space-between;gap:8px;padding:7px 4px 7px 12px;border-bottom:1px solid #F1F5F9;font-size:12px">
+    <span style="cursor:pointer;color:#1D4ED8" onclick="event.stopPropagation();${pl?`openHistory('${pl.uid}')`:''}">${p.icon} ${p.name}${p.n>1?` <b>(×${p.n})</b>`:''}</span>
+    <span style="color:#64748B;white-space:nowrap">${fmtDate(p.date)}</span>
+  </div>`;
+}
+let _openParam = -1;
+function toggleParamPlaces(i, param) {
+  const el = document.getElementById('fdb-pp-'+i);
+  if (_openParam >= 0 && _openParam !== i) {
+    const prev = document.getElementById('fdb-pp-'+_openParam);
+    if (prev) { prev.style.display='none'; prev.innerHTML=''; }
+  }
+  if (el.style.display === 'block') { el.style.display='none'; el.innerHTML=''; _openParam=-1; return; }
+  _openParam = i;
+  const list = _paramPlaceList(param);
+  el.innerHTML = list.slice(0,5).map(_paramRowHtml).join('') +
+    (list.length>5 ? `<div id="fdb-pp-more-${i}" style="display:flex;gap:8px;padding:8px 12px">
+        <button onclick="event.stopPropagation();showAllParamPlaces(${i},'${param.replace(/'/g,"\\'")}')"
+          style="flex:1;padding:8px;border:1.5px solid #1D4ED8;background:white;color:#1D4ED8;border-radius:8px;font-size:12px;font-family:inherit">
+          ดูทั้งหมด ${list.length} สถานที่</button>
+        <button onclick="event.stopPropagation();shareParamPlaces('${param.replace(/'/g,"\\'")}')"
+          style="padding:8px 12px;border:1.5px solid var(--border);background:white;border-radius:8px;font-size:12px;font-family:inherit">📤 แชร์</button>
+      </div>` : `<div style="padding:8px 12px"><button onclick="event.stopPropagation();shareParamPlaces('${param.replace(/'/g,"\\'")}')"
+        style="width:100%;padding:8px;border:1.5px solid var(--border);background:white;border-radius:8px;font-size:12px;font-family:inherit">📤 แชร์รายชื่อ (${list.length})</button></div>`);
+  el.style.display = 'block';
+}
+function showAllParamPlaces(i, param) {
+  const list = _paramPlaceList(param);
+  document.getElementById('fdb-pp-more-'+i).outerHTML =
+    list.slice(5).map(_paramRowHtml).join('') +
+    `<div style="padding:8px 12px"><button onclick="event.stopPropagation();shareParamPlaces('${param.replace(/'/g,"\\'")}')"
+      style="width:100%;padding:8px;border:1.5px solid var(--border);background:white;border-radius:8px;font-size:12px;font-family:inherit">📤 แชร์รายชื่อ (${list.length})</button></div>`;
+}
+async function shareParamPlaces(param) {
+  const list = _paramPlaceList(param);
+  const text = `❌ ${param} ไม่ผ่านเกณฑ์ ${list.length} สถานที่\n` +
+    list.map((p,i)=>`${i+1}. ${p.name}${p.n>1?` (×${p.n})`:''} — ${fmtDate(p.date)}`).join('\n');
+  if (navigator.share) { try { await navigator.share({text}); return; } catch(e){} }
+  await navigator.clipboard.writeText(text);
+  alert('คัดลอกรายชื่อแล้ว 📋');
 }
 
 function renderFamilyDash() {
@@ -2072,12 +2196,10 @@ function setMapFY(fy) {
 
 // Compute pass/fail for a place within a given FY window
 function placePassForFY(p, fy) {
-  const rows = fy === 'all' ? p.rows : rowsForFY(fy).filter(r => (r.placeCode||r.code||r.name) === p.code || r.name === p.name);
+  const rows = fy === 'all' ? p.rows : p.rows.filter(r => r.fy === parseInt(fy));
   if (!rows.length) return null; // no data in this FY
-  // Use latest date within that window
   const latestDate = rows.reduce((a, r) => (r.date||'') > a ? r.date : a, '');
-  const latestRows = rows.filter(r => r.date === latestDate);
-  return !latestRows.some(readingFails);
+  return { pass: !rows.filter(r => r.date === latestDate).some(readingFails), latestDate };
 }
 
 function redrawMapMarkers() {
@@ -2088,13 +2210,13 @@ function redrawMapMarkers() {
   PLACES.forEach(p => {
     if (!p.coord) return;
     // Filter by FY
-    const passResult = placePassForFY(p, mapFY);
-    if (passResult === null) return; // place has no data in this FY — skip
+    const res = placePassForFY(p, mapFY);
+    if (res === null) return; // place has no data in this FY — skip
     count++;
+    const passResult = res.pass;
+    const displayDate = res.latestDate;
     const fillColor = passResult ? '#00875A' : '#C0392B';
     const m = L.circleMarker(p.coord, { radius: 7, fillColor, color: '#fff', weight: 1.5, fillOpacity: 0.9, pane: 'stationPane' }).addTo(map);
-    const displayDate = mapFY === 'all' ? p.latestDate :
-      (rowsForFY(mapFY).filter(r=>r.name===p.name).reduce((a,r)=>(r.date||'')>a?r.date:a,''));
     m.on('mouseover', function(e) {
       const tip = document.getElementById('map-hover-tip');
       const latestR = mapFY==='all' ? p.latestRows[0] : p.rows.find(r=>r.date===displayDate);
@@ -2157,7 +2279,7 @@ function onMapSearchInput() {
   const box = document.getElementById('map-suggest');
   if (!mapSugItems.length) { hideMapSuggest(); return; }
   box.innerHTML = mapSugItems.map((p, i) => {
-    const pass = placePassForFY(p, mapFY) !== false;
+    const r = placePassForFY(p, mapFY); const pass = !r || r.pass;
     const idx = p.name.toLowerCase().indexOf(q);
     const hl = idx>=0 ? p.name.slice(0,idx)+'<b style="color:var(--blue)">'+p.name.slice(idx,idx+q.length)+'</b>'+p.name.slice(idx+q.length) : p.name;
     return `<div class="map-suggest-item" onclick="jumpToMapPlace(${i})">
