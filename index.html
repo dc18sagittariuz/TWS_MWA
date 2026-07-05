@@ -1996,8 +1996,12 @@ function renderFamilyDash() {
   // Unique places
   const placesSeen = {}, placeTypeCount = {};
   rows.forEach(r => {
-  const pt = r.placeType2||'อื่น ๆ';
-  placeTypeCount[pt] = (placeTypeCount[pt]||0)+1;
+  const pk = (r.placeCode||r.name)+'||'+(r.placeType2||'')+'||'+r.date;
+  if (!placesSeen[pk]) {
+    placesSeen[pk] = true;
+    const pt = r.placeType2||'อื่น ๆ';
+    placeTypeCount[pt] = (placeTypeCount[pt]||0)+1;
+  }
 });
   const totalPlaces = Object.values(placeTypeCount).reduce((a,b)=>a+b,0);
   document.getElementById('fdb-total').textContent = totalPlaces.toLocaleString('th-TH');
