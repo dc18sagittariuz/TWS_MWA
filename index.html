@@ -2,7 +2,7 @@
 <html lang="th">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>ตรวจสอบคุณภาพน้ำ</title>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css" />
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
@@ -504,8 +504,30 @@ header button[onclick*="openSideMenu"]:hover{ background:rgba(255,255,255,.26)!i
 .err-box{ border-radius:var(--r-md); }
 .empty{ padding:70px 20px; }
 </style>
+
+<style id="responsive-ux-v3">
+/* ===== Responsive UX/UI v3 ===== */
+:root{--nav-h:72px;--sidebar-w:282px;--focus:rgba(0,87,184,.32)}
+html{scroll-behavior:smooth} body{overflow-x:hidden;padding-bottom:calc(var(--nav-h) + env(safe-area-inset-bottom))}
+button,input,select{min-height:44px} button{touch-action:manipulation}
+:focus-visible{outline:3px solid var(--focus)!important;outline-offset:2px!important}
+.skip-link{position:fixed;left:12px;top:-60px;z-index:9999;background:#fff;color:var(--blue);padding:10px 14px;border-radius:10px;box-shadow:var(--shadow-lg);font-weight:700}.skip-link:focus{top:12px}
+.desktop-nav-label{display:none}.mobile-bottom-nav{position:fixed;left:0;right:0;bottom:0;z-index:2500;height:calc(var(--nav-h) + env(safe-area-inset-bottom));padding:8px 8px env(safe-area-inset-bottom);display:grid;grid-template-columns:repeat(3,1fr);background:rgba(255,255,255,.96);border-top:1px solid var(--border);box-shadow:0 -8px 28px -18px rgba(16,24,40,.45);backdrop-filter:blur(12px)}
+.mobile-bottom-nav .tab{border:0!important;border-radius:12px;padding:7px 4px;min-height:54px;display:flex;flex-direction:column;gap:3px;align-items:center;justify-content:center;font-size:11px}.mobile-bottom-nav .tab .nav-ico{font-size:19px;line-height:1}.mobile-bottom-nav .tab.active{background:var(--blue-light);color:var(--blue)}
+.tabs{display:none}.mobile-tools{display:flex;gap:8px}.summary-strip{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;padding:12px 16px 2px}.summary-pill{background:#fff;border:1px solid var(--border);border-radius:12px;padding:10px;text-align:center}.summary-pill b{display:block;font-size:17px}.summary-pill span{display:block;color:var(--gray);font-size:10px;margin-top:2px}.summary-pill.danger b{color:var(--red)}
+.filter-toggle{display:inline-flex;align-items:center;gap:6px}.filter-count{display:none;background:var(--blue);color:#fff;border-radius:999px;min-width:20px;height:20px;padding:0 5px;align-items:center;justify-content:center;font-size:10px}.filter-count.show{display:inline-flex}.filter-row{flex-wrap:nowrap}.filter-row.advanced-open #flt-branch,.filter-row.advanced-open #flt-province{display:block!important}.filter-row select{min-height:36px}
+.card{overflow:hidden}.card-summary{display:flex;align-items:flex-start;justify-content:space-between;gap:12px}.card-alert{margin:12px 0 0;border-radius:12px;padding:10px 12px;font-size:12px;line-height:1.55;background:var(--green-bg);color:var(--green)}.card-alert.fail{background:var(--red-bg);color:var(--red)}.card-alert.wait{background:var(--amber-bg);color:var(--amber)}.card-details{display:none;margin-top:12px}.card.expanded .card-details{display:block;animation:fadeIn .18s ease}.card-toggle{width:100%;margin-top:12px;background:#fff;border:1px solid var(--border);color:var(--blue);border-radius:12px;font:700 12px inherit;cursor:pointer}.card-toggle .chev{display:inline-block;transition:transform .2s}.card.expanded .card-toggle .chev{transform:rotate(180deg)}
+.threshold{display:block;font-size:8.5px;color:var(--gray-soft);font-weight:500;margin-top:3px}.stat.bad-stat{background:var(--red-bg);border-color:#F8CFCB}.stat.good-stat{background:#fff}.map-controls-wrap{background:#fff}.map-legend{min-height:44px}.modal-overlay,.fdb-detail-overlay{padding:12px;align-items:center}.modal,.fdb-detail-modal{border-radius:20px;max-width:760px;max-height:88vh;margin:auto}.close-btn{min-width:44px;min-height:44px}
+.sr-only{position:absolute!important;width:1px!important;height:1px!important;padding:0!important;margin:-1px!important;overflow:hidden!important;clip:rect(0,0,0,0)!important;white-space:nowrap!important;border:0!important}
+@media (max-width:639px){header{padding:13px 108px 12px 62px}.refresh-btn{width:44px!important;height:44px!important;top:8px!important}header button[onclick*="openSideMenu"]{width:44px!important;height:44px!important;top:8px!important}.search-bar{position:sticky;top:0;z-index:450;padding:10px 12px}.search-bar input{font-size:16px}.sort-btn{padding-inline:10px;font-size:0}.sort-btn::after{content:'เรียง';font-size:12px}.summary-strip{padding-inline:12px}.cards{padding-inline:12px}.card{padding:15px}.card-name{font-size:15px}.stats-grid{grid-template-columns:repeat(3,minmax(0,1fr))}.stat-val{font-size:14px}.card-actions{flex-direction:column}.map-fy-bar,.map-layers{display:none}.map-search{position:absolute;top:10px;left:10px;right:10px;z-index:600;border:0;background:transparent;padding:0}.map-search input{box-shadow:0 8px 24px rgba(16,24,40,.18);background:#fff}.map-legend{position:absolute;left:10px;right:10px;bottom:12px;z-index:600;border:0;border-radius:12px;box-shadow:0 8px 24px rgba(16,24,40,.16);background:rgba(255,255,255,.94)}#view-map{position:relative}#map{height:calc(100dvh - 124px)!important;min-height:520px}.db-topbar{align-items:flex-start;gap:8px;flex-direction:column}.db-topbar>div:last-child{width:100%;overflow-x:auto}.fdb-hero{margin:10px 12px 0;padding:14px}.fdb-total-card .val{font-size:32px}.fdb-body{padding:10px 12px}.modal-overlay,.fdb-detail-overlay{padding:0;align-items:flex-end}.modal,.fdb-detail-modal{border-radius:22px 22px 0 0;max-height:90dvh}}
+@media (min-width:640px) and (max-width:1023px){.cards{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));align-items:start}.summary-strip{grid-template-columns:repeat(3,minmax(0,180px));justify-content:start}.db-hero-row,.db-side-stats{grid-template-columns:repeat(4,minmax(0,1fr))}.db-hero-row{grid-column:span 2}.fdb-donuts{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));flex-direction:initial}}
+@media (min-width:1024px){body{padding-left:var(--sidebar-w);padding-bottom:0}#sidemenu{left:0!important;width:var(--sidebar-w)!important;box-shadow:1px 0 0 var(--border)!important}#sidemenu-overlay,header button[onclick*="openSideMenu"]{display:none!important}header{padding-left:28px;min-height:72px;display:flex;flex-direction:column;justify-content:center}.tabs{display:flex;position:sticky;top:0;padding:0 20px;justify-content:flex-start}.tabs .tab{flex:0 0 auto;min-width:132px}.mobile-bottom-nav{display:none}.desktop-nav-label{display:block}.search-bar{padding:18px 24px 10px}.filter-row{padding:4px 24px 14px}.summary-strip{padding:16px 24px 4px;grid-template-columns:repeat(3,minmax(0,180px));justify-content:start}.result-info{padding:14px 24px 8px}.cards{padding:0 24px 40px;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px;align-items:start}.load-more{max-width:360px;margin:0 auto 28px}.card:hover{transform:translateY(-1px)}#map{height:calc(100vh - 284px);min-height:560px}.map-search,.map-fy-bar,.map-layers,.map-legend{padding-left:24px;padding-right:24px}.db-hero-row{grid-template-columns:repeat(2,minmax(0,1fr));padding:20px 24px 0}.db-side-stats{grid-template-columns:repeat(2,minmax(0,1fr));padding:12px 24px 0}.db-sec{padding:20px 24px 0}.db-sec{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}.db-sec-title{grid-column:1/-1}.db-wcard{margin:0}.fdb-body{padding:18px 24px}.modal-overlay,.fdb-detail-overlay{padding-left:var(--sidebar-w)}}
+@media (min-width:1440px){.cards{grid-template-columns:repeat(3,minmax(0,1fr))}.db-sec{grid-template-columns:repeat(3,minmax(0,1fr))}.search-bar,.filter-row,.summary-strip,.result-info,.cards{max-width:1680px;margin-left:auto;margin-right:auto}.card-details .stats-grid{grid-template-columns:repeat(3,minmax(0,1fr))}}
+@media (prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.01ms!important;animation-iteration-count:1!important;scroll-behavior:auto!important;transition-duration:.01ms!important}}
+</style>
 </head>
 <body>
+<a class="skip-link" href="#view-list">ข้ามไปยังเนื้อหาหลัก</a>
 
 <div id="sidemenu-overlay" onclick="closeSideMenu()" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.4);z-index:1000"></div>
 <div id="sidemenu" style="position:fixed;top:0;left:-270px;width:250px;height:100%;background:white;z-index:1001;transition:left 0.25s ease;box-shadow:4px 0 16px rgba(0,0,0,0.12);display:flex;flex-direction:column;">
@@ -569,9 +591,11 @@ header button[onclick*="openSideMenu"]:hover{ background:rgba(255,255,255,.26)!i
       <input type="search" id="search" placeholder="ค้นหาชื่อสถานที่..." autocomplete="off" />
       <div class="suggest" id="suggest"></div>
     </div>
-    <button class="sort-btn" id="sort-btn" onclick="toggleSort()">⏷ ใหม่สุด</button>
+    <button class="sort-btn" id="sort-btn" onclick="toggleSort()" aria-label="เรียงลำดับข้อมูล">⏷ ใหม่สุด</button>
+    <button class="sort-btn filter-toggle" id="filter-toggle" onclick="toggleAdvancedFilters()" aria-expanded="false" aria-controls="list-filter-row">⚙ ตัวกรอง <span class="filter-count" id="filter-count">0</span></button>
   </div>
-  <div class="filter-row">
+  <div class="summary-strip" id="summary-strip" aria-live="polite"></div>
+  <div class="filter-row" id="list-filter-row">
     <button class="chip active" onclick="setFilter('all', event)">ทั้งหมด</button>
     <button class="chip" onclick="setFilter('pass', event)">✓ ผ่านเกณฑ์</button>
     <button class="chip" onclick="setFilter('fail', event)">✗ ไม่ผ่าน</button>
@@ -605,7 +629,7 @@ header button[onclick*="openSideMenu"]:hover{ background:rgba(255,255,255,.26)!i
   <div id="map"></div>
 </div>
 <!-- Donut detail modal -->
-<div class="fdb-detail-overlay" id="fdb-detail-overlay" onclick="if(event.target===this)closeFdbDetail()">
+<div class="fdb-detail-overlay" id="fdb-detail-overlay" role="dialog" aria-modal="true" aria-labelledby="fdb-detail-title" onclick="if(event.target===this)closeFdbDetail()">
   <div class="fdb-detail-modal">
     <button onclick="closeFdbDetail()" style="float:right;background:none;border:none;font-size:20px;cursor:pointer;color:#94A3B8;line-height:1;padding:0">×</button>
     <div class="fdb-detail-handle"></div>
@@ -619,6 +643,12 @@ header button[onclick*="openSideMenu"]:hover{ background:rgba(255,255,255,.26)!i
   </div>
 </div>
 
+
+<nav class="mobile-bottom-nav" aria-label="เมนูหลักบนมือถือ">
+  <button class="tab active" onclick="switchTab('list', event)" aria-label="รายการ"><span class="nav-ico">☷</span><span>รายการ</span></button>
+  <button class="tab" onclick="switchTab('map', event)" aria-label="แผนที่"><span class="nav-ico">⌖</span><span>แผนที่</span></button>
+  <button class="tab" onclick="switchTab('dash', event)" aria-label="ภาพรวม"><span class="nav-ico">▥</span><span>ภาพรวม</span></button>
+</nav>
 <div class="map-hover-tip" id="map-hover-tip"></div>
 
 <div class="view" id="view-dash">
@@ -1167,8 +1197,11 @@ function hideSuggest() { document.getElementById('suggest').classList.remove('sh
 
 /* ---------- TABS ---------- */
 function switchTab(tab, e) {
-  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
-  e.target.classList.add('active');
+  document.querySelectorAll('.tab').forEach(t => {
+    const isTarget = (t.getAttribute('onclick') || '').includes("'" + tab + "'");
+    t.classList.toggle('active', isTarget);
+    if (isTarget) t.setAttribute('aria-current','page'); else t.removeAttribute('aria-current');
+  });
   document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
   document.getElementById('view-' + tab).classList.add('active');
   if ((tab === 'map' || tab === 'dash') && PLACES.length) {
@@ -1237,44 +1270,46 @@ function render() {
 }
 function renderCard(p) {
   const waiting = !p.anyFail && p.latestRows.some(rowIsWaiting);
-  const pass = !p.anyFail && !waiting;
   const id = p.uid;
-  // show only readings from the latest sampling date, น้ำประปาต่อตรง first
   const typeOrder = ['น้ำประปาต่อตรง','น้ำผ่านเครื่องกรอง','น้ำผ่านเครื่องกรองจากตู้น้ำเย็น','น้ำผ่านบ่อ/ถังพักน้ำ'];
   const rows = [...p.latestRows].sort((a,b) => {
     const ia = typeOrder.indexOf(a.type), ib = typeOrder.indexOf(b.type);
     return (ia<0?99:ia) - (ib<0?99:ib);
   });
-  const blocks = rows.map(r => {
-    return `<div class="type-block">
-      <div class="type-head">
-        <div class="type-name">${typeLabel(r.type)}${r.point ? ' <b class="type-point-b">'+r.point+'</b>' : ''}</div>
-        ${miniBadge(r)}
-      </div>
+  const issueNames = [];
+  rows.forEach(r => {
+    if (statusCl(r.cl,r.type)==='bad') issueNames.push('คลอรีน');
+    if (statusTurb(r.turb)==='bad') issueNames.push('ความขุ่น');
+    if (statusPH(r.ph)==='bad') issueNames.push('pH');
+    if (statusBact(r.coliform,r.date)==='bad') issueNames.push('Coliform');
+    if (statusBact(r.ecoli,r.date)==='bad') issueNames.push('E.coli');
+    if (r.color && statusColor(r.color)==='bad') issueNames.push('สี');
+  });
+  const issues=[...new Set(issueNames)];
+  const alertClass=p.anyFail?'fail':waiting?'wait':'';
+  const alertText=p.anyFail
+    ? `⚠ ไม่ผ่าน ${issues.length || 1} พารามิเตอร์${issues.length ? ' · '+issues.slice(0,3).join(', ')+(issues.length>3?' และอื่น ๆ':'') : ''}`
+    : waiting ? '⏳ มีผลตรวจที่กำลังรอการยืนยัน' : '✓ ผลตรวจล่าสุดผ่านเกณฑ์ทั้งหมด';
+  const blocks = rows.map(r => `<div class="type-block">
+      <div class="type-head"><div class="type-name">${typeLabel(r.type)}${r.point ? ' <b class="type-point-b">'+r.point+'</b>' : ''}</div>${miniBadge(r)}</div>
       <div class="stats-grid">
-        <div class="stat"><div class="stat-val ${cls(statusCl(r.cl,r.type))}">${valOr(r.cl)}</div><div class="stat-label">คลอรีน mg/L</div></div>
-        <div class="stat"><div class="stat-val ${cls(statusTurb(r.turb))}">${valOr(r.turb)}</div><div class="stat-label">ความขุ่น NTU</div></div>
-        <div class="stat"><div class="stat-val ${cls(statusPH(r.ph))}">${valOr(r.ph)}</div><div class="stat-label">pH</div></div>
+        <div class="stat ${statusCl(r.cl,r.type)==='bad'?'bad-stat':'good-stat'}"><div class="stat-val ${cls(statusCl(r.cl,r.type))}">${valOr(r.cl)}</div><div class="stat-label">คลอรีน mg/L</div><span class="threshold">เกณฑ์ตามประเภทน้ำ</span></div>
+        <div class="stat ${statusTurb(r.turb)==='bad'?'bad-stat':'good-stat'}"><div class="stat-val ${cls(statusTurb(r.turb))}">${valOr(r.turb)}</div><div class="stat-label">ความขุ่น NTU</div><span class="threshold">เกณฑ์ ≤ 1 NTU</span></div>
+        <div class="stat ${statusPH(r.ph)==='bad'?'bad-stat':'good-stat'}"><div class="stat-val ${cls(statusPH(r.ph))}">${valOr(r.ph)}</div><div class="stat-label">pH</div><span class="threshold">เกณฑ์ 6.5–8.5</span></div>
       </div>
       <div class="ecoli-row"><span>Coliform: ${bactDisplay(r.coliform, r.date, statusBact)}</span><span>E.coli: ${bactDisplay(r.ecoli, r.date, statusBact)}</span>${r.color?`<span>สี: <b class="${cls(statusColor(r.color))}">${valOr(r.color)}</b></span>`:''}<span style="margin-left:auto;color:var(--gray)">📅 ${fmtDate(r.date)}</span></div>
-    </div>`;
-  }).join('');
-  return `<div class="card">
-    <div class="card-header">
-      <div class="card-name">${p.name}</div>
-      <span class="badge ${p.anyFail?'fail':waiting?'':'pass'}" style="${waiting?'background:#FEF3C7;color:#B45309':''}">${p.anyFail?'ไม่ผ่าน':waiting?'⏳ รอผล':'ผ่านเกณฑ์'}</span>
+    </div>`).join('');
+  return `<article class="card" id="card-${id}">
+    <div class="card-summary"><div><div class="card-name">${p.name}</div><div class="card-sub">เก็บล่าสุด ${fmtDate(p.latestDate)} · ${rows.length} จุดเก็บ · ทั้งหมด ${p.rows.length} ครั้ง</div></div>
+      <span class="badge ${p.anyFail?'fail':waiting?'':'pass'}" style="${waiting?'background:#FEF3C7;color:#B45309':''}">${p.anyFail?'✕ ไม่ผ่าน':waiting?'⏳ รอผล':'✓ ผ่าน'}</span></div>
+    <div class="card-alert ${alertClass}">${alertText}</div>
+    <div class="card-details" id="details-${id}">${blocks}
+      <div class="card-actions"><button class="act-btn act-history" onclick="openHistory('${id}')">🕐 ข้อมูลย้อนหลัง</button><button class="act-btn act-trend" onclick="openTrend('${id}')">📈 กราฟแนวโน้ม</button><button class="act-btn act-history" onclick="jumpToMap('${id}')">📍 แผนที่</button></div>
     </div>
-    <div class="card-sub">
-      เก็บล่าสุด ${fmtDate(p.latestDate)} · ${rows.length} จุดเก็บ · ทั้งหมด ${p.rows.length} ครั้ง
-      <button class="map-pin-btn" onclick="jumpToMap('${id}')" title="แสดงบนแผนที่">📍 แผนที่</button>
-    </div>
-    ${blocks}
-    <div class="card-actions">
-      <button class="act-btn act-history" onclick="openHistory('${id}')">🕐 ดูข้อมูลย้อนหลัง</button>
-      <button class="act-btn act-trend" onclick="openTrend('${id}')">📈 กราฟแนวโน้ม</button>
-    </div>
-  </div>`;
+    <button class="card-toggle" onclick="toggleCard('${id}',this)" aria-expanded="false" aria-controls="details-${id}">ดูรายละเอียด <span class="chev">⌄</span></button>
+  </article>`;
 }
+function toggleCard(id,btn){const card=document.getElementById('card-'+id);if(!card)return;const open=card.classList.toggle('expanded');btn.setAttribute('aria-expanded',String(open));btn.firstChild.textContent=open?'ซ่อนรายละเอียด ':'ดูรายละเอียด ';}
 function loadMore() { page++; render(); }
 
 function findPlace(id) { return PLACES.find(p => p.uid === id); }
@@ -2409,6 +2444,18 @@ function saveDashJpeg(e) {
 function fdbResetFilters(){ ['fdb-fy','fdb-month','fdb-province'].forEach(id=>document.getElementById(id).value='all'); renderFamilyDash(); }
 function showLoading() { document.getElementById('load-overlay').classList.add('show'); }
 function hideLoading() { document.getElementById('load-overlay').classList.remove('show'); }
+
+/* ===== UX enhancement layer ===== */
+let advancedFiltersOpen=false;
+function toggleAdvancedFilters(){advancedFiltersOpen=!advancedFiltersOpen;const row=document.getElementById('list-filter-row');const btn=document.getElementById('filter-toggle');row.classList.toggle('advanced-open',advancedFiltersOpen);btn.setAttribute('aria-expanded',String(advancedFiltersOpen));}
+function updateSummary(){if(!window.PLACES||!PLACES.length)return;const total=PLACES.length,fail=PLACES.filter(p=>p.anyFail).length,waiting=PLACES.filter(p=>!p.anyFail&&p.latestRows.some(rowIsWaiting)).length,pass=total-fail-waiting;const el=document.getElementById('summary-strip');if(el)el.innerHTML=`<div class="summary-pill"><b>${total.toLocaleString('th-TH')}</b><span>สถานที่ทั้งหมด</span></div><div class="summary-pill"><b>${pass.toLocaleString('th-TH')}</b><span>ผ่านเกณฑ์</span></div><div class="summary-pill danger"><b>${fail.toLocaleString('th-TH')}</b><span>ไม่ผ่านเกณฑ์</span></div>`;updateFilterCount();}
+function updateFilterCount(){const br=document.getElementById('flt-branch')?.value||'all',pv=document.getElementById('flt-province')?.value||'all';const n=(currentFilter!=='all'?1:0)+(br!=='all'?1:0)+(pv!=='all'?1:0);const b=document.getElementById('filter-count');if(b){b.textContent=n;b.classList.toggle('show',n>0)}}
+const _render=render;render=function(){_render();updateSummary();updateFilterCount();};
+const _buildListFilters=buildListFilters;buildListFilters=function(){_buildListFilters();['flt-branch','flt-province'].forEach(id=>{const el=document.getElementById(id);if(el)el.addEventListener('change',updateFilterCount)});};
+function setupAccessibility(){document.querySelectorAll('button:not([type])').forEach(b=>b.type='button');const search=document.getElementById('search');if(search){search.setAttribute('aria-label','ค้นหาชื่อสถานที่');search.setAttribute('aria-autocomplete','list');search.setAttribute('aria-controls','suggest')}const mapSearch=document.getElementById('map-search-input');if(mapSearch)mapSearch.setAttribute('aria-label','ค้นหาสถานที่บนแผนที่');document.addEventListener('keydown',e=>{if(e.key==='Escape'){closeSideMenu();const mo=document.getElementById('modal-overlay');if(mo?.classList.contains('show')&&typeof closeModal==='function')closeModal();if(document.getElementById('fdb-detail-overlay')?.classList.contains('show'))closeFdbDetail();}})}
+function debounce(fn,wait=250){let t;return(...args)=>{clearTimeout(t);t=setTimeout(()=>fn(...args),wait)}}
+window.addEventListener('DOMContentLoaded',setupAccessibility);
+
 </script>
 </body>
 </html>
