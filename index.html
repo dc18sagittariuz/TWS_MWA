@@ -95,6 +95,9 @@
   .load-more { display: block; width: calc(100% - 32px); margin: 0 16px 16px; padding: 12px; background: white; border: 1.5px solid var(--blue); color: var(--blue); border-radius: 10px; font-size: 14px; font-family: inherit; font-weight: 600; cursor: pointer; }
 
   #map { width: 100%; height: calc(100vh - 250px); }
+  .map-locate-btn { width: 34px; height: 34px; background: white; display: flex; align-items: center; justify-content: center; font-size: 17px; cursor: pointer; text-decoration: none; color: var(--text); }
+  .map-locate-btn:hover { background: var(--bg); }
+  .map-locate-btn.loading { opacity: 0.5; pointer-events: none; }
   .map-fy-bar { padding: 8px 12px; background: white; border-bottom: 1px solid var(--border); display: flex; gap: 8px; align-items: center; }
   .map-fy-label { font-size: 11px; color: var(--gray); white-space: nowrap; flex-shrink: 0; }
   .map-fy-chip { white-space: nowrap; padding: 4px 11px; border-radius: 20px; font-size: 12px; border: 1.5px solid var(--border); background: white; cursor: pointer; font-family: inherit; color: var(--gray); flex-shrink: 0; }
@@ -854,6 +857,7 @@ const PAGE_SIZE = 15;
 let currentFilter = 'all';
 let sortDesc = true;
 let map = null, mapInited = false;
+let userLocationMarker = null;
 let mapFY = 'all';
 let kmzLayers = {}; // {mwa: layerGroup, sta: layerGroup}
 let sugIndex = -1, sugItems = [];
@@ -2279,9 +2283,54 @@ function initMap() {
     inp.addEventListener('input', onMapSearchInput);
     inp.addEventListener('keydown', onMapSearchKey);
     document.addEventListener('click', e => { if (!e.target.closest('.map-search')) hideMapSuggest(); });
+    addLocateControl(map);
   }
   buildMapFYChips();
   redrawMapMarkers();
+}
+
+function addLocateControl(mapInstance) {
+  const LocateControl = L.Control.extend({
+    options: { position: 'bottomright' },
+    onAdd: function() {
+      const container = L.DomUtil.create('div', 'leaflet-bar leaflet-control');
+      const btn = L.DomUtil.create('a', 'map-locate-btn', container);
+      btn.href = '#';
+      btn.title = 'ตำแหน่งปัจจุบัน';
+      btn.innerHTML = '📍';
+      L.DomEvent.disableClickPropagation(container);
+      L.DomEvent.on(btn, 'click', function(e) {
+        L.DomEvent.preventDefault(e);
+        locateOnMap(mapInstance, btn);
+      });
+      return container;
+    }
+  });
+  mapInstance.addControl(new LocateControl());
+}
+
+function locateOnMap(mapInstance, btn) {
+  if (!navigator.geolocation) {
+    alert('เบราว์เซอร์นี้ไม่รองรับการระบุตำแหน่ง');
+    return;
+  }
+  if (btn) btn.classList.add('loading');
+  navigator.geolocation.getCurrentPosition(
+    pos => {
+      if (btn) btn.classList.remove('loading');
+      const { latitude, longitude } = pos.coords;
+      mapInstance.setView([latitude, longitude], 16);
+      if (userLocationMarker) mapInstance.removeLayer(userLocationMarker);
+      userLocationMarker = L.circleMarker([latitude, longitude], {
+        radius: 8, fillColor: '#0057B8', color: '#fff', weight: 2, fillOpacity: 1
+      }).addTo(mapInstance).bindPopup('ตำแหน่งของคุณ').openPopup();
+    },
+    err => {
+      if (btn) btn.classList.remove('loading');
+      alert('ไม่สามารถระบุตำแหน่งได้: ' + err.message);
+    },
+    { enableHighAccuracy: true, timeout: 10000 }
+  );
 }
 
 function positionMapTip(e) {
