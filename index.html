@@ -2128,7 +2128,7 @@ function renderFamilyDash() {
     const pt = r.placeType2; if (!PLACE_TYPES.includes(pt)) return;
     if (!rStats[fyMo]) rStats[fyMo] = {};
     if (!rStats[fyMo][pt]) rStats[fyMo][pt] = new Set();
-    rStats[fyMo][pt].add(r.placeCode||r.name);
+    rStats[fyMo][pt].add((r.placeCode||r.name)+'||'+r.date);
   });
   // เรียง 0→11 (ต.ค.→ก.ย.) แต่แสดงเฉพาะเดือนที่มีข้อมูล
   const fyMonths = Array.from({length:12},(_,i)=>i).filter(i=>rStats[i]);
@@ -2140,10 +2140,9 @@ function renderFamilyDash() {
       const tot=counts.reduce((a,b)=>a+b,0);
       return `<tr><td class="bold">${MONTH_NAMES[mo]||mo}</td>${counts.map(c=>`<td class="r">${c}</td>`).join('')}<td class="r bold">${tot}</td></tr>`;
     }).join('') +
-    `<tr><td>Grand total</td>${PLACE_TYPES.map(pt=>{
-      const ids=new Set(); fyMonths.forEach(mo=>{if(rStats[mo]&&rStats[mo][pt]) rStats[mo][pt].forEach(id=>ids.add(id));});
-      return `<td class="r">${ids.size}</td>`;
-    }).join('')}<td class="r">${totalPlaces}</td></tr>`;
+    `<tr><td>Grand total</td>${PLACE_TYPES.map(pt=>
+      `<td class="r">${(placeTypeCount[pt]||0).toLocaleString()}</td>`
+    ).join('')}<td class="r">${totalPlaces.toLocaleString()}</td></tr>`;
 }
 
 let _activeTypeKey = null;
