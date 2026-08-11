@@ -64,9 +64,6 @@
   .badge.pass { background: var(--green-bg); color: var(--green); }
   .badge.fail { background: var(--red-bg); color: var(--red); }
   .card-sub { font-size: 11px; color: var(--gray); margin-bottom: 10px; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
-  .card-meta { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin: -4px 0 10px; }
-  .meta-chip { display: inline-flex; align-items: center; gap: 4px; font-size: 11px; font-weight: 700; padding: 3px 9px; border-radius: 6px; background: var(--blue-light); color: var(--blue); }
-  .meta-chip.src { background: var(--green-bg); color: var(--green); }
   .map-pin-btn { margin-left: auto; padding: 2px 8px; font-size: 11px; background: var(--bg); border: 1px solid var(--border); border-radius: 12px; color: var(--blue); font-family: inherit; cursor: pointer; white-space: nowrap; }
 
   .type-block { border: 1px solid var(--border); border-radius: 10px; padding: 10px 12px; margin-bottom: 8px; }
@@ -383,8 +380,6 @@ header button[onclick*="openSideMenu"]:hover{ background:rgba(255,255,255,.26)!i
 .card-name{ font-size:16px; font-weight:700; letter-spacing:-.25px; line-height:1.3; }
 .badge{ padding:5px 12px; border-radius:22px; font-size:11px; font-weight:700; letter-spacing:.1px; }
 .card-sub{ font-size:11.5px; color:var(--gray); margin-bottom:14px; gap:7px; }
-.card-meta{ margin:-6px 0 12px; gap:7px; }
-.meta-chip{ font-size:11.5px; padding:4px 10px; }
 .map-pin-btn{ background:var(--blue-light); border:none; border-radius:14px; padding:4px 11px; color:var(--blue); font-weight:600; }
 .map-pin-btn:hover{ background:#dce9fa; }
 .type-block{ border:1px solid var(--border); background:#FBFCFE; border-radius:var(--r-md); padding:13px 14px; margin-bottom:10px; }
@@ -503,6 +498,34 @@ header button[onclick*="openSideMenu"]:hover{ background:rgba(255,255,255,.26)!i
 .fdb-table th{ background:#F1F6FE; color:#1D4ED8; }
 .fdb-table tr:hover td{ background:#F8FBFF; }
 @media(max-width:700px){ .fdb-hero{ flex-direction:column; text-align:center; } .fdb-filters{ flex-direction:column; align-items:stretch; } }
+
+/* ---- Family dashboard: ขยายตัวอักษรบนจอคอม ---- */
+@media(min-width:1024px){
+  #db-family header h1{ font-size:24px; }
+  #db-family header p{ font-size:15px; }
+  #db-family .fdb-hero{ padding:20px 26px; }
+  #db-family .fdb-hero-title{ font-size:27px; }
+  #db-family .fdb-hero-sub{ font-size:15px; }
+  #db-family .fdb-total-card .lbl{ font-size:14px; }
+  #db-family .fdb-total-card .val{ font-size:52px; }
+  #db-family .fdb-filter-label{ font-size:15px; }
+  #db-family .fdb-filter-sel{ font-size:16px; padding:10px 12px; }
+  #db-family .fdb-reset{ font-size:15px; padding:9px 14px; }
+  #db-family .fdb-donut-name{ font-size:17px; margin-bottom:8px; }
+  #db-family .fdb-donut-leg{ font-size:14px; }
+  #db-family .fdb-donut-leg-dot{ width:10px; height:10px; }
+  #db-family .fdb-donut-sub{ font-size:14px; }
+  #db-family canvas[id^="fdb-donut-c"]{ width:132px !important; height:132px !important; }
+  #db-family .fdb-bar-title{ font-size:16px; }
+  #db-family .fdb-bar-row .lbl{ font-size:15px; width:104px; }
+  #db-family .fdb-bar-row .num{ font-size:16px; width:58px; }
+  #db-family .fdb-bar-row .track{ height:13px; }
+  #db-family .fdb-table-title{ font-size:17px; padding:14px 16px 8px; }
+  #db-family .fdb-table{ font-size:15px; }
+  #db-family .fdb-table th,
+  #db-family .fdb-table td{ font-size:15px; padding:11px 12px; }
+  #db-family .fdb-export{ font-size:15px; padding:12px; }
+}
 .map-fy-chip, .layer-btn{ border-radius:20px; border:1.5px solid var(--border); font-weight:600; padding:6px 13px; }
 .map-fy-chip.active{ background:var(--blue); border-color:var(--blue); color:#fff; }
 #map{ height:calc(100vh - 270px); }
@@ -815,7 +838,7 @@ const PROJECTS = {
       ph:['pH','ph','PH'], cond:['การนำไฟฟ้า','การนำ'], iron:['เหล็ก'],
       color:['สีปรากฏ','สี'], coliform:['Coliform','coliform'],
       ecoli:['E.coli','E. coli','e.coli'], quality:['คุณภาพน้ำ','คุณภาพ'], coord:['พิกัด'],
-      branch:['สาขา'], source:['รับน้ำจาก','รับน้ำมาจาก'],
+      branch:['สาขา'],
     }
   },
   fountain: {
@@ -849,8 +872,7 @@ const PROJECTS = {
       ph:['pH','ph','PH'], cond:['การนำไฟฟ้า','การนำ'], iron:['เหล็ก'],
       color:['สีปรากฏ','สี'], coliform:['Coliform','coliform'],
       ecoli:['E.coli','E. coli','e.coli'], quality:['คุณภาพน้ำ','คุณภาพ'], coord:['พิกัด'],
-      branch:['สาขา'], source:['รับน้ำจาก','รับน้ำมาจาก'],
-      placeType:['ประเภทสถานที่'], placeType2:['ประเภทสถานที่_2'], province:['จังหวัด'],
+      branch:['สาขา'], placeType:['ประเภทสถานที่'], placeType2:['ประเภทสถานที่_2'], province:['จังหวัด'],
     }
   }
 };
@@ -968,7 +990,7 @@ function buildHeaderMap(headerRow, colDef) {
   const claimed = new Set();
   const norm = s => (s || '').trim().toLowerCase().replace(/\s+/g, '');
   const normed = headerRow.map(norm);
-  const order = ['code','placeCode','name','type','point','date','cl','turb','ph','cond','iron','color','coliform','ecoli','quality','coord','branch','source','placeType','placeType2','province'];
+  const order = ['code','placeCode','name','type','point','date','cl','turb','ph','cond','iron','color','coliform','ecoli','quality','coord','branch','placeType','placeType2','province'];
   for (const key of order) {
     for (const candidate of (colDef[key]||[])) {
       const cand = norm(candidate); let fi = -1;
@@ -987,7 +1009,7 @@ function normalize(row) {
     date, cl: gg(row,'cl'), turb: gg(row,'turb'), ph: gg(row,'ph'),
     cond: gg(row,'cond'), iron: gg(row,'iron'), color: gg(row,'color'),
     coliform: gg(row,'coliform'), ecoli: gg(row,'ecoli'), quality: gg(row,'quality'),
-    coord: gg(row,'coord'), branch: gg(row,'branch'), source: gg(row,'source'),
+    coord: gg(row,'coord'), branch: gg(row,'branch'),
     placeType: gg(row,'placeType'), placeType2: gg(row,'placeType2'), province: gg(row,'province'),
     fy: fyOf(date)
   };
@@ -1053,9 +1075,6 @@ function groupByPlace() {
     p.allPass = latestRows.length > 0 && !p.anyFail;
     // which types this place has ever had (for filter chips)
     p.allTypes = new Set(p.rows.map(r => r.type || 'อื่น ๆ'));
-    // สาขา / รับน้ำจาก เป็นค่าคงที่ระดับสถานที่ — เอาแถวแรกที่มีค่า
-    p.branch = (p.rows.find(r => r.branch) || {}).branch || '';
-    p.source = (p.rows.find(r => r.source) || {}).source || '';
     return p;
   });
 }
@@ -1298,7 +1317,6 @@ function renderCard(p) {
       เก็บล่าสุด ${fmtDate(p.latestDate)} · ${rows.length} จุดเก็บ · ทั้งหมด ${p.rows.length} ครั้ง
       <button class="map-pin-btn" onclick="jumpToMap('${id}')" title="แสดงบนแผนที่">📍 แผนที่</button>
     </div>
-    ${metaRow(p)}
     ${blocks}
     <div class="card-actions">
       <button class="act-btn act-history" onclick="openHistory('${id}')">🕐 ดูข้อมูลย้อนหลัง</button>
@@ -1306,19 +1324,6 @@ function renderCard(p) {
     </div>
   </div>`;
 }
-// แถบ สาขา / รับน้ำจาก (ระดับสถานที่)
-function metaRow(p) {
-  const c = [];
-  if (p.branch) c.push(`<span class="meta-chip">🏢 สาขา ${escHtml(p.branch)}</span>`);
-  if (p.source) c.push(`<span class="meta-chip src">🚰 รับน้ำจาก ${escHtml(p.source)}</span>`);
-  return c.length ? `<div class="card-meta">${c.join('')}</div>` : '';
-}
-// ข้อความสั้นแบบบรรทัดเดียว ใช้ใน popup แผนที่ / modal
-function metaText(p, sep = ' · ') {
-  return [p.branch ? 'สาขา ' + p.branch : '', p.source ? 'รับน้ำจาก ' + p.source : '']
-    .filter(Boolean).join(sep);
-}
-
 function loadMore() { page++; render(); }
 
 function findPlace(id) { return PLACES.find(p => p.uid === id); }
@@ -1354,9 +1359,7 @@ function jumpToMap(id) {
 function openHistory(id) {
   const p = findPlace(id); if (!p) return;
   document.getElementById('modal-title').textContent = p.name;
-  document.getElementById('modal-sub').innerHTML =
-    `ประวัติการเก็บทั้งหมด ${p.rows.length} รายการ` +
-    (metaText(p) ? `<div class="card-meta" style="margin:6px 0 0">${metaRow(p).replace(/^<div[^>]*>|<\/div>$/g,'')}</div>` : '');
+  document.getElementById('modal-sub').textContent = `ประวัติการเก็บทั้งหมด ${p.rows.length} รายการ`;
   // group rows by date
   const byDate = {};
   p.rows.forEach(r => { (byDate[r.date] = byDate[r.date] || []).push(r); });
@@ -1400,9 +1403,8 @@ function openTrend(id) {
   const p = findPlace(id); if (!p) return;
   const allRows = [...p.rows].sort((a,b) => a.date.localeCompare(b.date));
   document.getElementById('modal-title').textContent = p.name;
-  document.getElementById('modal-sub').innerHTML =
-    `แนวโน้ม · ${allRows.length} ตัวอย่าง · ${fmtDate(allRows[0].date)} – ${fmtDate(allRows[allRows.length-1].date)}` +
-    (metaText(p) ? `<div class="card-meta" style="margin:6px 0 0">${metaRow(p).replace(/^<div[^>]*>|<\/div>$/g,'')}</div>` : '');
+  document.getElementById('modal-sub').textContent =
+    `แนวโน้ม · ${allRows.length} ตัวอย่าง · ${fmtDate(allRows[0].date)} – ${fmtDate(allRows[allRows.length-1].date)}`;
 
   // Group by type
   const byType = {};
@@ -1704,10 +1706,10 @@ function exportFailsCSV() {
   const fy = document.getElementById('db-fy-sel')?.value || 'all';
   const fails = rowsForFY(fy).filter(readingFails);
   if (!fails.length) return alert('ไม่มีรายการไม่ผ่านเกณฑ์');
-  const head = ['สถานที่','ประเภท','จุดเก็บ','วันที่','คลอรีน','ความขุ่น','pH','สี','นำไฟฟ้า','Coliform','E.coli','สาขา','รับน้ำจาก','จังหวัด'];
+  const head = ['สถานที่','ประเภท','จุดเก็บ','วันที่','คลอรีน','ความขุ่น','pH','สี','นำไฟฟ้า','Coliform','E.coli','สาขา','จังหวัด'];
   const esc = v => `"${String(v??'').replace(/"/g,'""')}"`;
   const csv = '\uFEFF' + [head.join(','), ...fails.map(r =>
-    [r.name,r.type,r.point,fmtDate(r.date),r.cl,r.turb,r.ph,r.color,r.cond,r.coliform,r.ecoli,r.branch,r.source,r.province].map(esc).join(',')
+    [r.name,r.type,r.point,fmtDate(r.date),r.cl,r.turb,r.ph,r.color,r.cond,r.coliform,r.ecoli,r.branch,r.province].map(esc).join(',')
   )].join('\n');
   const a = document.createElement('a');
   a.href = URL.createObjectURL(new Blob([csv], {type:'text/csv;charset=utf-8'}));
@@ -2284,7 +2286,6 @@ function redrawMapMarkers() {
         lines += `<br>คลอรีน ${valOr(latestR.cl)} · ขุ่น ${valOr(latestR.turb)} · pH ${valOr(latestR.ph)}`;
         if (latestR.coliform || latestR.ecoli) lines += `<br>Coliform ${escHtml(latestR.coliform)||'-'} · E.coli ${escHtml(latestR.ecoli)||'-'}`;
       }
-      if (metaText(p)) lines += `<br><span style="font-size:10px;opacity:0.75">🏢 ${escHtml(metaText(p))}</span>`;
       lines += `<br><span style="font-size:10px;opacity:0.7">${p.rows.length} ครั้ง · ${passResult ? '✅ ผ่านเกณฑ์' : '❌ ไม่ผ่าน'}</span>`;
       tip.innerHTML = lines;
       tip.style.display = 'block';
@@ -2293,7 +2294,7 @@ function redrawMapMarkers() {
     m.on('mousemove', function(e) { positionMapTip(e.originalEvent); });
     m.on('mouseout', function() { document.getElementById('map-hover-tip').style.display = 'none'; });
     const id = p.uid;
-    m.bindPopup(`<b>${escHtml(p.name)}</b><br>📅 ${fmtDate(displayDate||p.latestDate)} · ${p.latestRows.length} จุดเก็บ${metaText(p) ? '<br><span style="color:#0057B8;font-weight:700">🏢 '+escHtml(metaText(p))+'</span>' : ''}<br><span style="color:${passResult?'#00875A':'#C0392B'};font-weight:700">${passResult?'ผ่านเกณฑ์':'ไม่ผ่าน'}</span><br>
+    m.bindPopup(`<b>${escHtml(p.name)}</b><br>📅 ${fmtDate(displayDate||p.latestDate)} · ${p.latestRows.length} จุดเก็บ<br><span style="color:${passResult?'#00875A':'#C0392B'};font-weight:700">${passResult?'ผ่านเกณฑ์':'ไม่ผ่าน'}</span><br>
       <button onclick="openHistory('${id}')" style="margin-top:6px;padding:5px 10px;background:#0057B8;color:#fff;border:none;border-radius:6px;font-size:12px;cursor:pointer;font-family:inherit">ดูรายละเอียด</button>`);
     mapMarkers.push({ marker: m, place: p });
   });
