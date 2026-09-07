@@ -36,3 +36,12 @@ button,input,select{font:inherit}button,select,summary{cursor:pointer}button,inp
 #fdb-table-right tbody tr:last-child td.bold{font-weight:700}
 
 .chart-bound-note{font-size:12px;color:var(--gray);margin:-8px 0 20px;line-height:1.7}
+
+/* Let dashboard filters scroll with the page on phones and touch devices. */
+@media (max-width:760px), (hover:none) and (pointer:coarse) {
+  #db-family .fdb-filters {
+    position:static;
+    top:auto;
+    z-index:auto;
+  }
+}
