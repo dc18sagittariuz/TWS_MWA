@@ -845,6 +845,7 @@ const PROJECTS = {
     key: 'monitor',
     name: 'โครงการ Monitor',
     sheet: 'monitor',
+    gid: '1062319470',
     color: '#0057B8',
     icon: '💧',
     hasType: true,
@@ -861,6 +862,7 @@ const PROJECTS = {
     key: 'fountain',
     name: 'แท่นน้ำประปา',
     sheet: 'fountain',
+    gid: '957146213',
     color: '#00875A',
     icon: '🚰',
     hasType: false,
@@ -877,6 +879,7 @@ const PROJECTS = {
     key: 'family',
     name: 'ครอบครัวน้ำประปา',
     sheet: 'monitor',
+    gid: '1062319470',
     color: '#2563EB',
     icon: '🏠',
     hasType: true,
@@ -895,7 +898,9 @@ const PROJECTS = {
 
 let CURRENT_PROJECT = PROJECTS.monitor;
 function csvUrl(proj) {
-  return `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:csv&sheet=${encodeURIComponent(proj.sheet)}&t=${new Date().toISOString().slice(0,13)}`;
+  // Raw CSV preserves text in mixed numeric columns. GViz drops values such as
+  // "น้อยกว่า 0.20" as null after inferring that the column is numeric.
+  return `https://docs.google.com/spreadsheets/d/${SHEET_ID}/export?format=csv&gid=${encodeURIComponent(proj.gid)}&t=${Date.now()}`;
 }
 
 let ROWS = [];          // normalized rows
@@ -1440,7 +1445,7 @@ function openTrend(id) {
     const byDate = {};
     rows.forEach(r => {
       if (!byDate[r.date]) byDate[r.date] = { ph:[], cl:[], turb:[], col:[], eco:[] };
-      const ph=toNum(r.ph), cl=toNum(r.cl), tb=toNum(r.turb);
+      const ph=toNum(r.ph), cl=toNum(r.cl), tb=numOf(r.turb);
       const co=bactNum(r.coliform), ec=bactNum(r.ecoli);
       if (ph!==null) byDate[r.date].ph.push(ph);
       if (cl!==null) byDate[r.date].cl.push(cl);
@@ -1455,6 +1460,7 @@ function openTrend(id) {
     html += `<div class="trend-type-head">${typeLabel(t)}</div>`;
     if (isd) html += chartBlock('คลอรีนอิสระคงเหลือ','(เกณฑ์ 0.2–2.0 mg/L)', dates, dates.map(d=>avg(byDate[d].cl)), '#00875A', [0.2,2.0], 'mg/L');
     html += chartBlock('ความขุ่น','(เกณฑ์ ≤ 1.0 NTU)', dates, dates.map(d=>avg(byDate[d].turb)), '#D97706', [null,1.0], 'NTU');
+    if (rows.some(r => /น้อยกว่า|มากกว่า|[<>≤≥]/.test(r.turb))) html += '<p class="chart-bound-note">ค่าความขุ่นที่ระบุ “น้อยกว่า” หรือ “มากกว่า” ใช้ค่าขีดจำกัดที่รายงานในการวาดกราฟและคำนวณค่าเฉลี่ย จึงไม่ใช่ค่าที่วัดได้แน่นอน ดูข้อความต้นฉบับในประวัติผลตรวจ</p>';
     html += chartBlock('ค่า pH','(เกณฑ์ 6.5–8.5)', dates, dates.map(d=>avg(byDate[d].ph)), '#0057B8', [6.5,8.5], 'pH');
     html += chartBlock('Coliform','(พบ = ไม่ผ่านเกณฑ์)', dates, dates.map(d=>avg(byDate[d].col)), '#7C3AED', null, 'count', true);
     html += chartBlock('E.coli','(พบ = ไม่ผ่านเกณฑ์)', dates, dates.map(d=>avg(byDate[d].eco)), '#DC2626', null, 'count', true);

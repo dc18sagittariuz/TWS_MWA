@@ -34,3 +34,5 @@ button,input,select{font:inherit}button,select,summary{cursor:pointer}button,inp
 #fdb-table-right tfoot td{position:sticky;bottom:0;z-index:2;background:#eff4ff;font-weight:700}
 #fdb-table-right tbody tr:last-child td{background:transparent;font-weight:inherit}
 #fdb-table-right tbody tr:last-child td.bold{font-weight:700}
+
+.chart-bound-note{font-size:12px;color:var(--gray);margin:-8px 0 20px;line-height:1.7}
