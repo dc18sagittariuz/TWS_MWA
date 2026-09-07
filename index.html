@@ -2,7 +2,7 @@
 <html lang="th">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <title>ตรวจสอบคุณภาพน้ำ</title>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css" />
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
@@ -535,7 +535,6 @@ header button[onclick*="openSideMenu"]:hover{ background:rgba(255,255,255,.26)!i
 .err-box{ border-radius:var(--r-md); }
 .empty{ padding:70px 20px; }
 </style>
-<link rel="stylesheet" href="redesign.css">
 </head>
 <body>
 
@@ -581,59 +580,47 @@ header button[onclick*="openSideMenu"]:hover{ background:rgba(255,255,255,.26)!i
     </a>
   </div>
   <div style="padding:14px 16px;border-top:1px solid var(--border);font-size:11px;color:var(--gray)">
-    Google Sheets · โหลดข้อมูลเมื่อเปิดหน้า
+    💾 Google Sheets · อัปเดตสด
   </div>
 </div>
 
-<a class="skip-link" href="#view-list">ข้ามไปยังเนื้อหา</a>
-<header id="main-header">
-  <div class="brand-mark" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none"><path d="M12 3C9 7 5 11 5 15a7 7 0 0 0 14 0c0-4-4-8-7-12Z" stroke="currentColor" stroke-width="1.8"/><path d="M8 15a4 4 0 0 0 4 4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg></div>
-  <div class="header-copy"><div class="eyebrow">MWA · WATER QUALITY</div><h1><span id="header-icon" hidden></span><span id="header-title">โครงการ Monitor</span></h1><p id="total-count" aria-live="polite">กำลังโหลดข้อมูล…</p></div>
-  <div class="header-tools"><label class="project-control">โครงการ<select id="project-select" onchange="switchProject(this.value)"><option value="monitor">Monitor</option><option value="fountain">แท่นน้ำประปา</option><option value="family">ครอบครัวน้ำประปา</option></select></label><button class="tool-btn" onclick="loadData()" aria-label="โหลดข้อมูลใหม่" title="โหลดข้อมูลใหม่">↻ <span>รีเฟรช</span></button><button class="tool-btn" onclick="exportDashboard(event)" title="บันทึก Dashboard">↓ <span>บันทึกภาพ</span></button></div>
+<header id="main-header" style="background:var(--blue)">
+  <button class="refresh-btn" onclick="saveDashJpeg(event)" title="บันทึกภาพ" style="right:56px">📷</button>
+  <button class="refresh-btn" onclick="loadData()" title="โหลดข้อมูลใหม่">↻</button>
+  <button onclick="openSideMenu()" style="background:none;border:none;color:white;font-size:22px;cursor:pointer;float:left;margin-right:10px;padding:0;line-height:1;opacity:0.9">☰</button>
+  <h1><span id="header-icon">💧</span> <span id="header-title">โครงการ Monitor</span></h1>
+  <p><span id="total-count">กำลังโหลด…</span></p>
 </header>
 
 <div id="load-overlay"><div class="lo-spin"></div><div class="lo-text">กำลังโหลดข้อมูล…</div></div>
 
-<nav class="tabs" aria-label="มุมมองข้อมูล">
-  <button class="tab active" onclick="switchTab('list', event)">รายการสถานที่</button>
+<div class="tabs">
+  <button class="tab active" onclick="switchTab('list', event)">รายการ</button>
   <button class="tab" onclick="switchTab('map', event)">แผนที่</button>
-  <button class="tab" onclick="switchTab('dash', event)">ภาพรวมผลตรวจ</button>
-</nav>
+  <button class="tab" onclick="switchTab('dash', event)">Dashboard</button>
+</div>
 
-<div id="app-message" role="status" hidden></div>
-<div class="view active" id="view-list" tabindex="-1">
-  <div class="section-heading"><div><h2>สถานที่ตรวจคุณภาพน้ำ</h2><p>ผลตรวจล่าสุดของแต่ละสถานที่</p></div><button class="tool-btn" onclick="shareView()">↗ แชร์มุมมอง</button></div>
-  <div id="list-summary" class="summary-strip"></div>
+<div class="view active" id="view-list">
   <div class="search-bar">
     <div class="search-wrap">
       <input type="search" id="search" placeholder="ค้นหาชื่อสถานที่..." autocomplete="off" />
       <div class="suggest" id="suggest"></div>
     </div>
-    <button class="tool-btn filter-toggle" onclick="openFilters()">ตัวกรอง <span id="filter-count"></span></button>
-    <button class="sort-btn" id="sort-btn" onclick="toggleSort()">↓ ใหม่สุด</button>
+    <button class="sort-btn" id="sort-btn" onclick="toggleSort()">⏷ ใหม่สุด</button>
   </div>
   <div class="filter-row">
     <button class="chip active" onclick="setFilter('all', event)">ทั้งหมด</button>
     <button class="chip" onclick="setFilter('pass', event)">✓ ผ่านเกณฑ์</button>
     <button class="chip" onclick="setFilter('fail', event)">✗ ไม่ผ่าน</button>
-    <button class="chip" onclick="setFilter('wait', event)">รอผล / ข้อมูลไม่ครบ</button>
+    <select id="flt-branch" class="chip" onchange="page=0;render()" style="max-width:130px;display:none"></select>
+    <select id="flt-province" class="chip" onchange="page=0;render()" style="max-width:130px;display:none"></select>
   </div>
-  <div id="filter-backdrop" hidden onclick="closeFilters()"></div>
-  <div class="advanced-filters" id="advanced-filters">
-    <div class="filter-sheet-heading"><b>กรองสถานที่</b><button class="tool-btn" onclick="closeFilters()" aria-label="ปิดตัวกรอง">×</button></div>
-    <label>ปีงบประมาณ<select id="list-fy" onchange="page=0;render()"><option value="all">ทุกปี</option></select></label>
-    <label id="branch-label">สาขา<select id="flt-branch" class="chip" onchange="page=0;render()" aria-label="สาขา"></select></label>
-    <label id="province-label">จังหวัด<select id="flt-province" class="chip" onchange="page=0;render()" aria-label="จังหวัด"></select></label>
-    <button class="clear-filters" onclick="resetListFilters()">ล้างตัวกรอง</button>
-    <button class="tool-btn filter-apply" onclick="closeFilters()">แสดงผลลัพธ์</button>
-  </div>
-  <div id="active-filters" aria-live="polite"></div><p class="result-info" id="result-info" aria-live="polite"></p>
+  <p class="result-info" id="result-info"></p>
   <div class="cards" id="cards"><div class="loading"><div class="spinner"></div>กำลังโหลดข้อมูลจาก Google Sheet…</div></div>
   <button class="load-more" id="load-more-btn" onclick="loadMore()" style="display:none">โหลดเพิ่มเติม</button>
 </div>
 
 <div class="view" id="view-map">
-  <div class="section-heading"><div><h2>แผนที่คุณภาพน้ำ</h2><p>เลือกสถานที่เพื่อดูผลตรวจและประวัติ</p></div><button class="tool-btn" onclick="fitMapResults()">แสดงทุกจุด</button></div>
   <div class="map-search">
     <input type="search" id="map-search-input" placeholder="ค้นหาสถานที่บนแผนที่..." autocomplete="off" />
     <div class="map-suggest" id="map-suggest"></div>
@@ -645,19 +632,18 @@ header button[onclick*="openSideMenu"]:hover{ background:rgba(255,255,255,.26)!i
   <div class="map-legend">
     <span><span class="legend-dot" style="background:#00875A"></span>ผ่านเกณฑ์</span>
     <span><span class="legend-dot" style="background:#C0392B"></span>ไม่ผ่าน</span>
-    <span><span class="legend-dot" style="background:#b7791f"></span>รอผล / ข้อมูลไม่ครบ</span>
     <span id="map-count" style="margin-left:auto"></span>
   </div>
   <div class="map-layers">
     <span class="layer-label">ชั้นข้อมูล:</span>
-    <button class="layer-btn mwa on" id="btn-mwa" onclick="toggleLayer('mwa')">พื้นที่สาขา</button>
-    <button class="layer-btn sta on" id="btn-sta" onclick="toggleLayer('sta')">พื้นที่อิทธิพล สจ.</button>
+    <button class="layer-btn mwa on" id="btn-mwa" onclick="toggleLayer('mwa')">🔵 พื้นที่สาขา</button>
+    <button class="layer-btn sta on" id="btn-sta" onclick="toggleLayer('sta')">🟠 พื้นที่อิทธิพล สจ.</button>
   </div>
-  <div class="map-workspace"><aside class="map-results-panel"><label class="map-status-label">สถานะผลตรวจ<select id="map-status" onchange="redrawMapMarkers()"><option value="all">ทุกสถานะ</option><option value="fail">ไม่ผ่านเกณฑ์</option><option value="wait">รอผล / ข้อมูลไม่ครบ</option><option value="pass">ผ่านเกณฑ์</option></select></label><div id="map-results"></div></aside><div class="map-canvas"><div id="map"></div><section id="map-detail" hidden aria-label="รายละเอียดสถานที่"></section></div></div>
+  <div id="map"></div>
 </div>
 <!-- Donut detail modal -->
 <div class="fdb-detail-overlay" id="fdb-detail-overlay" onclick="if(event.target===this)closeFdbDetail()">
-  <div class="fdb-detail-modal" role="dialog" aria-modal="true" aria-labelledby="fdb-detail-title" tabindex="-1">
+  <div class="fdb-detail-modal">
     <button onclick="closeFdbDetail()" style="float:right;background:none;border:none;font-size:20px;cursor:pointer;color:#94A3B8;line-height:1;padding:0">×</button>
     <div class="fdb-detail-handle"></div>
     <div class="fdb-detail-title" id="fdb-detail-title"></div>
@@ -678,7 +664,7 @@ header button[onclick*="openSideMenu"]:hover{ background:rgba(255,255,255,.26)!i
   <div class="db-topbar">
     <div class="db-updated" id="db-updated">กำลังโหลด…</div>
     <div style="display:flex;gap:8px;align-items:center">
-      <button class="db-fy-sel" onclick="saveDashJpeg(event)" title="บันทึกภาพ" style="cursor:pointer">↓ บันทึกภาพ</button>
+      <button class="db-fy-sel" onclick="saveDashJpeg(event)" title="บันทึกภาพ" style="cursor:pointer">📷 บันทึก</button>
       <button class="db-fy-sel" onclick="exportFailsCSV()" style="cursor:pointer">⬇ CSV ไม่ผ่าน</button>
       <select class="db-fy-sel" id="db-fy-sel" onchange="renderDash(this.value)">
         <option value="all">ทุกปี</option>
@@ -700,7 +686,7 @@ header button[onclick*="openSideMenu"]:hover{ background:rgba(255,255,255,.26)!i
       <div class="db-hero-sub" id="db-pass">— รายการ</div>
     </div>
   </div>
-  <div class="db-side-stats"><div class="db-sstat"><div class="db-sstat-lbl">รอผล / ข้อมูลไม่ครบ</div><div class="db-sstat-val amber" id="db-wait">—</div><div class="db-sstat-sub">รายการที่ยังสรุปว่าผ่านไม่ได้</div></div>
+  <div class="db-side-stats">
     <div class="db-sstat">
       <div class="db-sstat-lbl">ไม่ผ่านเกณฑ์</div>
       <div class="db-sstat-val db-red" id="db-fpct">—</div>
@@ -721,7 +707,7 @@ header button[onclick*="openSideMenu"]:hover{ background:rgba(255,255,255,.26)!i
         <div class="db-donut-legend">
           <div class="db-dleg"><span class="db-dleg-l"><span class="db-dleg-dot" id="db-dot-pass"></span>ผ่านเกณฑ์</span><span class="db-dleg-v" id="db-r-pass">—</span></div>
           <div class="db-dleg"><span class="db-dleg-l"><span class="db-dleg-dot" style="background:#DC2626"></span>ไม่ผ่าน</span><span class="db-dleg-v" id="db-r-fail">—</span></div>
-          <div class="db-dleg"><span class="db-dleg-l"><span class="db-dleg-dot" style="background:#b7791f"></span>รอผล / ข้อมูลไม่ครบ</span><span class="db-dleg-v" id="db-r-wait">0</span></div>
+          <div class="db-dleg"><span class="db-dleg-l"><span class="db-dleg-dot" style="background:#E5E7EB"></span>ไม่มีผล</span><span class="db-dleg-v">0</span></div>
         </div>
       </div>
     </div>
@@ -735,7 +721,7 @@ header button[onclick*="openSideMenu"]:hover{ background:rgba(255,255,255,.26)!i
 
     <!-- fountain-only: branch bars -->
     <div id="db-branch-section" style="display:none">
-      <div class="db-sec-title">ผลที่สรุปแล้วรายสาขา (ไม่รวมรอผล)</div>
+      <div class="db-sec-title">ผ่าน / ไม่ผ่านรายสาขา</div>
       <div class="db-wcard">
         <div style="display:flex;gap:14px;margin-bottom:10px;font-size:10px;color:#64748B">
           <span style="display:flex;align-items:center;gap:3px"><span style="width:8px;height:8px;border-radius:2px;display:inline-block" id="db-branch-color-pass"></span>ผ่านเกณฑ์</span>
@@ -765,10 +751,10 @@ header button[onclick*="openSideMenu"]:hover{ background:rgba(255,255,255,.26)!i
       <div class="fdb-hero">
         <div>
           <div class="fdb-hero-title">โครงการครอบครัวน้ำประปา</div>
-          <div class="fdb-hero-sub">ฝ่ายคุณภาพน้ำ การประปานครหลวง · <span id="fdb-meta"></span> · <a href="https://dc18sagittariuz.github.io/MWAfamily/" target="_blank" rel="noopener">ข้อมูลโครงการ ↗</a></div>
+          <div class="fdb-hero-sub">ฝ่ายคุณภาพน้ำ การประปานครหลวง · <span id="fdb-meta"></span></div>
         </div>
         <div class="fdb-total-card">
-          <div class="lbl">สถานที่ที่ตรวจ (แห่ง)</div>
+          <div class="lbl">ครอบครัวน้ำประปา (แห่ง)</div>
           <div class="val" id="fdb-total">—</div>
         </div>
       </div>
@@ -802,23 +788,21 @@ header button[onclick*="openSideMenu"]:hover{ background:rgba(255,255,255,.26)!i
         <!-- 2-column layout below donuts -->
         <div class="fdb-two-col">
           <!-- LEFT: bar chart + table ซ้าย -->
-          <div class="fdb-col-left" id="fdb-left-column">
+          <div class="fdb-col-left">
             <div class="fdb-bar-card">
               <div class="fdb-bar-title">จำนวน (แห่ง)</div>
               <div style="display:flex;flex-direction:column;gap:0;padding:0 2px" id="fdb-bars"></div>
             </div>
-            <div class="fdb-table-card" id="fdb-water-table-card">
+            <div class="fdb-table-card">
               <div class="fdb-table-title">เกณฑ์ / ผ่านเกณฑ์กำหนดฯ</div>
               <table class="fdb-table" id="fdb-table-left"></table>
             </div>
           </div>
           <!-- RIGHT: table ขวา -->
-          <div class="fdb-col-right" id="fdb-right-column">
-            <div class="fdb-table-card fdb-month-card">
-              <div class="fdb-table-title" id="fdb-month-title">ประเภทสถานที่ / (แห่ง)</div>
-              <div class="fdb-month-scroll" id="fdb-month-scroll" tabindex="0" role="region" aria-labelledby="fdb-month-title">
-                <table class="fdb-table" id="fdb-table-right"></table>
-              </div>
+          <div class="fdb-col-right">
+            <div class="fdb-table-card" style="height:100%">
+              <div class="fdb-table-title">ประเภทสถานที่ / (แห่ง)</div>
+              <table class="fdb-table" id="fdb-table-right"></table>
             </div>
           </div>
         </div>
@@ -828,8 +812,8 @@ header button[onclick*="openSideMenu"]:hover{ background:rgba(255,255,255,.26)!i
 </div>
 
 <div class="modal-overlay" id="modal" onclick="if(event.target===this)closeModal()">
-  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="modal-title" tabindex="-1">
-    <button class="close-btn" aria-label="ปิดรายละเอียด" onclick="closeModal()">×</button>
+  <div class="modal">
+    <button class="close-btn" onclick="closeModal()">×</button>
     <div class="modal-handle"></div>
     <h2 id="modal-title"></h2>
     <div class="sub" id="modal-sub"></div>
@@ -845,7 +829,6 @@ const PROJECTS = {
     key: 'monitor',
     name: 'โครงการ Monitor',
     sheet: 'monitor',
-    gid: '1062319470',
     color: '#0057B8',
     icon: '💧',
     hasType: true,
@@ -862,7 +845,6 @@ const PROJECTS = {
     key: 'fountain',
     name: 'แท่นน้ำประปา',
     sheet: 'fountain',
-    gid: '957146213',
     color: '#00875A',
     icon: '🚰',
     hasType: false,
@@ -879,7 +861,6 @@ const PROJECTS = {
     key: 'family',
     name: 'ครอบครัวน้ำประปา',
     sheet: 'monitor',
-    gid: '1062319470',
     color: '#2563EB',
     icon: '🏠',
     hasType: true,
@@ -898,9 +879,7 @@ const PROJECTS = {
 
 let CURRENT_PROJECT = PROJECTS.monitor;
 function csvUrl(proj) {
-  // Raw CSV preserves text in mixed numeric columns. GViz drops values such as
-  // "น้อยกว่า 0.20" as null after inferring that the column is numeric.
-  return `https://docs.google.com/spreadsheets/d/${SHEET_ID}/export?format=csv&gid=${encodeURIComponent(proj.gid)}&t=${Date.now()}`;
+  return `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:csv&sheet=${encodeURIComponent(proj.sheet)}&t=${new Date().toISOString().slice(0,13)}`;
 }
 
 let ROWS = [];          // normalized rows
@@ -1077,7 +1056,7 @@ function groupByPlace() {
     // Use placeCode (รหัสสถานที่) if present, else code, else name
     const key = (r.placeCode || r.code || r.name) + '||' + r.name;
     if (!map[key]) {
-      const uid = 'place-' + Object.keys(map).length;
+      const uid = key.replace(/'/g,'').replace(/[|\s]/g,'_');
       map[key] = { uid, code: r.placeCode || r.code, name: r.name, rows: [] };
     }
     map[key].rows.push(r);
@@ -1093,7 +1072,7 @@ function groupByPlace() {
     p.latestRows = latestRows;
     // overall pass = any parameter failing its threshold on the latest date?
     p.anyFail = latestRows.some(readingFails);
-    p.allPass = latestRows.length > 0 && latestRows.every(r => rowStatus(r) === 'pass');
+    p.allPass = latestRows.length > 0 && !p.anyFail;
     // which types this place has ever had (for filter chips)
     p.allTypes = new Set(p.rows.map(r => r.type || 'อื่น ๆ'));
     return p;
@@ -1261,7 +1240,7 @@ function setFilter(f, e) {
 }
 function toggleSort() {
   sortDesc = !sortDesc;
-  document.getElementById('sort-btn').textContent = sortDesc ? '↓ ใหม่สุด' : '↑ เก่าสุด';
+  document.getElementById('sort-btn').textContent = sortDesc ? '⏷ ใหม่สุด' : '⏶ เก่าสุด';
   page = 0; render();
 }
 
@@ -1445,7 +1424,7 @@ function openTrend(id) {
     const byDate = {};
     rows.forEach(r => {
       if (!byDate[r.date]) byDate[r.date] = { ph:[], cl:[], turb:[], col:[], eco:[] };
-      const ph=toNum(r.ph), cl=toNum(r.cl), tb=numOf(r.turb);
+      const ph=toNum(r.ph), cl=toNum(r.cl), tb=toNum(r.turb);
       const co=bactNum(r.coliform), ec=bactNum(r.ecoli);
       if (ph!==null) byDate[r.date].ph.push(ph);
       if (cl!==null) byDate[r.date].cl.push(cl);
@@ -1460,7 +1439,6 @@ function openTrend(id) {
     html += `<div class="trend-type-head">${typeLabel(t)}</div>`;
     if (isd) html += chartBlock('คลอรีนอิสระคงเหลือ','(เกณฑ์ 0.2–2.0 mg/L)', dates, dates.map(d=>avg(byDate[d].cl)), '#00875A', [0.2,2.0], 'mg/L');
     html += chartBlock('ความขุ่น','(เกณฑ์ ≤ 1.0 NTU)', dates, dates.map(d=>avg(byDate[d].turb)), '#D97706', [null,1.0], 'NTU');
-    if (rows.some(r => /น้อยกว่า|มากกว่า|[<>≤≥]/.test(r.turb))) html += '<p class="chart-bound-note">ค่าความขุ่นที่ระบุ “น้อยกว่า” หรือ “มากกว่า” ใช้ค่าขีดจำกัดที่รายงานในการวาดกราฟและคำนวณค่าเฉลี่ย จึงไม่ใช่ค่าที่วัดได้แน่นอน ดูข้อความต้นฉบับในประวัติผลตรวจ</p>';
     html += chartBlock('ค่า pH','(เกณฑ์ 6.5–8.5)', dates, dates.map(d=>avg(byDate[d].ph)), '#0057B8', [6.5,8.5], 'pH');
     html += chartBlock('Coliform','(พบ = ไม่ผ่านเกณฑ์)', dates, dates.map(d=>avg(byDate[d].col)), '#7C3AED', null, 'count', true);
     html += chartBlock('E.coli','(พบ = ไม่ผ่านเกณฑ์)', dates, dates.map(d=>avg(byDate[d].eco)), '#DC2626', null, 'count', true);
@@ -1658,23 +1636,23 @@ function rowsForFY(fy) {
 }
 
 function computeStats(rows) {
-  let pass = 0, fail = 0, wait = 0;
+  let pass = 0, fail = 0;
   const typeStats = {}, paramFails = {}, placesSeen = new Set();
   const failRows = []; // rows that fail, for latest-fails list
 
   rows.forEach(r => {
     placesSeen.add(r.placeCode || r.code || r.name);
     const failed = readingFails(r);
-    if (failed) { fail++; } else if (rowStatus(r) === 'wait') { wait++; } else { pass++; }
+    if (failed) { fail++; } else { pass++; }
 
     // per-type
     const t = r.type || 'อื่น ๆ';
-    if (!typeStats[t]) typeStats[t] = {pass:0, fail:0, wait:0};
-    typeStats[t][rowStatus(r)]++;
+    if (!typeStats[t]) typeStats[t] = {pass:0, fail:0};
+    if (failed) typeStats[t].fail++; else typeStats[t].pass++;
 
     // which params failed (global + per-type)
     const t2 = r.type || 'อื่น ๆ';
-    if (!typeStats[t2]) typeStats[t2] = {pass:0, fail:0, wait:0};  // already initialized above, just guard
+    if (!typeStats[t2]) typeStats[t2] = {pass:0, fail:0};  // already initialized above, just guard
     if (!typeStats[t2].params) typeStats[t2].params = {};
     const addParam = (k) => {
       paramFails[k] = (paramFails[k]||0)+1;
@@ -1697,8 +1675,8 @@ function computeStats(rows) {
   const branchStats = {};
   rows.forEach(r => {
     if (!r.branch) return;
-    if (!branchStats[r.branch]) branchStats[r.branch] = {pass:0,fail:0,wait:0};
-    branchStats[r.branch][rowStatus(r)]++;
+    if (!branchStats[r.branch]) branchStats[r.branch] = {pass:0,fail:0};
+    if (readingFails(r)) branchStats[r.branch].fail++; else branchStats[r.branch].pass++;
   });
 
   // latest 5 fail rows (unique place names, newest first)
@@ -1721,7 +1699,7 @@ function computeStats(rows) {
   });
 
   const latestDate = rows.reduce((a,r)=>(r.date||'')>(a)?r.date:a, '');
-  return { pass, fail, wait, total:rows.length, places:placesSeen.size, latestDate, typeStats, paramFails, branchStats, latestFails };
+  return { pass, fail, total:rows.length, places:placesSeen.size, latestDate, typeStats, paramFails, branchStats, latestFails };
 }
 
 function exportFailsCSV() {
@@ -1780,9 +1758,9 @@ function renderDash(fy) {
   document.getElementById('db-dot-pass').style.background = projColor;
 
   // numbers
-  const tot = s.total;
+  const tot = s.pass + s.fail;
   const pct = tot ? Math.round(s.pass/tot*100) : 0;
-  const fpct = tot ? Math.round(s.fail/tot*100) : 0;
+  const fpct = 100-pct;
   document.getElementById('db-hero-icon').textContent = CURRENT_PROJECT.icon;
   document.getElementById('db-hero-label').textContent = isFountain ? 'แท่นน้ำทั้งหมด' : 'รายการทั้งหมด';
   document.getElementById('db-total').textContent = s.total.toLocaleString('th-TH');
@@ -1796,14 +1774,11 @@ function renderDash(fy) {
   document.getElementById('db-updated').textContent = `${CURRENT_PROJECT.name} · ${s.total.toLocaleString('th-TH')} รายการ`;
 
   drawDonut('db-donut-canvas', 90, 36, 13, [
-    {frac: s.pass/tot, color: '#087a55'},
-    {frac: s.fail/tot, color: '#DC2626'},
-    {frac: s.wait/tot, color: '#b7791f'}
+    {frac: pct/100, color: projColor},
+    {frac: fpct/100, color: '#DC2626'}
   ], pct+'%', 'ผ่านเกณฑ์');
   document.getElementById('db-r-pass').textContent = s.pass.toLocaleString('th-TH');
   document.getElementById('db-r-fail').textContent = s.fail.toLocaleString('th-TH');
-  document.getElementById('db-r-wait').textContent = s.wait.toLocaleString('th-TH');
-  document.getElementById('db-wait').textContent = s.wait.toLocaleString('th-TH');
 
   // type cards
   const TYPE_SHORT = {
@@ -1819,7 +1794,8 @@ function renderDash(fy) {
     const ap=a[1].pass/(a[1].pass+a[1].fail), bp=b[1].pass/(b[1].pass+b[1].fail);
     return bp<ap?b:a;
   }) : null;
-  document.getElementById('db-type-title').textContent = 'ผลที่สรุปแล้ว แยกประเภทน้ำ (ไม่รวมรอผล)';
+  document.getElementById('db-type-title').textContent =
+    isFountain ? 'ผ่าน / ไม่ผ่านแยกประเภทสถานที่' : 'ผ่าน / ไม่ผ่านแยกประเภทน้ำ';
   // store per-type params for interactive expand
   window._dbTypeData = {};
   types.forEach(([k,v]) => { window._dbTypeData[k] = v; });
@@ -1827,10 +1803,10 @@ function renderDash(fy) {
     const tp = Math.round(v.pass/(v.pass+v.fail)*100);
     const cls = tp>=70?'pass':tp>=50?'warn':'fail';
     const safek = escJsAttr(k);
-    return `<div class="db-tcard ${cls}" role="button" tabindex="0" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();this.click()}" onclick="toggleTypeDetail('${safek}')" style="cursor:pointer;position:relative">
+    return `<div class="db-tcard ${cls}" onclick="toggleTypeDetail('${safek}')" style="cursor:pointer;position:relative">
       <div class="db-tcard-name">${TYPE_SHORT[k]||escHtml(k)} <span style="font-size:9px;opacity:0.6">กด ▾</span></div>
       <div class="db-tcard-pct">${tp}%</div>
-      <div class="db-tcard-sub">ไม่ผ่าน ${100-tp}% · ${(v.pass+v.fail).toLocaleString('th-TH')} รายการ · รอผล ${v.wait||0}</div>
+      <div class="db-tcard-sub">ไม่ผ่าน ${100-tp}% · ${(v.pass+v.fail).toLocaleString('th-TH')} รายการ</div>
     </div>`;
   }).join('');
   document.getElementById('db-type-detail').innerHTML = '';
@@ -1930,7 +1906,7 @@ function buildFamilyFilters() {
   moSel.innerHTML = '<option value="all">ทั้งหมด</option>' + MONTH_NAMES.map((m,i)=>`<option value="${i}">${m}</option>`).join('');
   const provinces = [...new Set(ROWS.map(r=>r.province).filter(Boolean))].sort();
   const prvSel = document.getElementById('fdb-province');
-  prvSel.innerHTML = '<option value="all">ทั้งหมด</option>' + provinces.map(p=>`<option value="${escHtml(p)}">${escHtml(p)}</option>`).join('');
+  prvSel.innerHTML = '<option value="all">ทั้งหมด</option>' + provinces.map(p=>`<option value="${p}">${p}</option>`).join('');
 }
 
 function getFamilyRows() {
@@ -2078,7 +2054,7 @@ function renderFamilyDash() {
   // Unique places
   const placesSeen = {}, placeTypeCount = {};
   rows.forEach(r => {
-  const pk = (r.placeCode||r.code||r.name)+'||'+(r.placeType2||'');
+  const pk = (r.placeCode||r.name)+'||'+(r.placeType2||'')+'||'+r.date;
   if (!placesSeen[pk]) {
     placesSeen[pk] = true;
     const pt = r.placeType2||'อื่น ๆ';
@@ -2174,11 +2150,10 @@ function renderFamilyDash() {
     `<tr><td>Grand total</td><td class="r">${lTP.toLocaleString()}</td><td class="r">${lTF.toLocaleString()}</td>${showWait?`<td class="r">${lTW.toLocaleString()}</td>`:''}<td class="r">${(lTP+lTF+lTW).toLocaleString()}</td></tr>`;
 
   // Right table: เดือน × สถานศึกษา/สถานพยาบาล — เรียงตามปีงบ ต.ค.(0)→ก.ย.(11)
-  const rStats = {}, monthLatestDates = {};
+  const rStats = {};
   rows.forEach(r => {
     const fyMo = getFYMonth(r.date); if (fyMo < 0) return;
     const pt = r.placeType2; if (!PLACE_TYPES.includes(pt)) return;
-    monthLatestDates[fyMo] = (monthLatestDates[fyMo]||'') > r.date ? monthLatestDates[fyMo] : r.date;
     if (!rStats[fyMo]) rStats[fyMo] = {};
     if (!rStats[fyMo][pt]) rStats[fyMo][pt] = new Set();
     rStats[fyMo][pt].add((r.placeCode||r.name)+'||'+r.date);
@@ -2186,16 +2161,16 @@ function renderFamilyDash() {
   // เรียง 0→11 (ต.ค.→ก.ย.) แต่แสดงเฉพาะเดือนที่มีข้อมูล
   const fyMonths = Array.from({length:12},(_,i)=>i).filter(i=>rStats[i]);
   document.getElementById('fdb-table-right').innerHTML =
-    `<thead><tr><th>เดือน</th>${PLACE_TYPES.map(p=>`<th class="r">${p}</th>`).join('')}<th class="r">Grand total</th></tr></thead><tbody>` +
+    `<tr><th>เดือน</th>${PLACE_TYPES.map(p=>`<th class="r">${p}</th>`).join('')}<th class="r">Grand total</th></tr>` +
     fyMonths.map(mo => {
       const mc=rStats[mo]||{};
       const counts=PLACE_TYPES.map(pt=>mc[pt]?mc[pt].size:0);
       const tot=counts.reduce((a,b)=>a+b,0);
-      return `<tr data-latest-date="${escHtml(monthLatestDates[mo])}"><td class="bold">${MONTH_NAMES[mo]||mo}</td>${counts.map(c=>`<td class="r">${c}</td>`).join('')}<td class="r bold">${tot}</td></tr>`;
+      return `<tr><td class="bold">${MONTH_NAMES[mo]||mo}</td>${counts.map(c=>`<td class="r">${c}</td>`).join('')}<td class="r bold">${tot}</td></tr>`;
     }).join('') +
-    `</tbody><tfoot><tr><td>Grand total</td>${PLACE_TYPES.map(pt=>
+    `<tr><td>Grand total</td>${PLACE_TYPES.map(pt=>
       `<td class="r">${(placeTypeCount[pt]||0).toLocaleString()}</td>`
-    ).join('')}<td class="r">${totalPlaces.toLocaleString()}</td></tr></tfoot>`;
+    ).join('')}<td class="r">${totalPlaces.toLocaleString()}</td></tr>`;
 }
 
 let _activeTypeKey = null;
@@ -2497,18 +2472,11 @@ function svgsToImgs(root) {
     img.src = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(new XMLSerializer().serializeToString(clone));
   })));
 }
-async function saveDashJpeg(e) {
-  const btn = e.currentTarget || e.target.closest?.('button') || e.target;
-  const orig = btn.innerHTML;
+function saveDashJpeg(e) {
+  const btn = e.target;
+  const orig = btn.textContent;
   btn.textContent = '⏳ กำลังบันทึก…';
   btn.disabled = true;
-  await document.fonts.ready;
-  await new Promise(resolve => requestAnimationFrame(resolve));
-  if (CURRENT_PROJECT.key === 'family') {
-    syncFamilyMonthHeight();
-    scrollFamilyToLatestMonth();
-    await new Promise(resolve => requestAnimationFrame(resolve));
-  }
   const header = document.getElementById('main-header');
   const dash = document.getElementById(CURRENT_PROJECT.key === 'family' ? 'db-family' : 'db-general');
   const holder = document.createElement('div');
@@ -2520,10 +2488,9 @@ async function saveDashJpeg(e) {
   holder.appendChild(header.cloneNode(true));
   holder.appendChild(dash);
   document.body.insertBefore(holder, document.body.firstChild);
-  return svgsToImgs(holder).then(() => html2canvas(holder, {
+  svgsToImgs(holder).then(() => html2canvas(holder, {
     backgroundColor: '#F3F5F9', scale: 2, useCORS: true,
     onclone: (doc) => {
-      if (CURRENT_PROJECT.key === 'family') scrollFamilyToLatestMonth(doc);
       doc.querySelectorAll('#_capHolder button[onclick*="saveDashJpeg"], #_capHolder .refresh-btn, #_capHolder button[onclick*="openSideMenu"]').forEach(b => b.style.display = 'none');
     }
   })).then(canvas => {
@@ -2538,13 +2505,12 @@ async function saveDashJpeg(e) {
     parent.insertBefore(dash, marker);
     marker.remove();
     holder.remove();
-    btn.innerHTML = orig; btn.disabled = false;
+    btn.textContent = orig; btn.disabled = false;
   });
 }
 function fdbResetFilters(){ ['fdb-fy','fdb-month','fdb-province'].forEach(id=>document.getElementById(id).value='all'); renderFamilyDash(); }
 function showLoading() { document.getElementById('load-overlay').classList.add('show'); }
 function hideLoading() { document.getElementById('load-overlay').classList.remove('show'); }
 </script>
-<script src="redesign.js"></script>
 </body>
 </html>
