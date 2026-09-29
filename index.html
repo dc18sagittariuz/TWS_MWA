@@ -498,6 +498,34 @@ header button[onclick*="openSideMenu"]:hover{ background:rgba(255,255,255,.26)!i
 .fdb-table th{ background:#F1F6FE; color:#1D4ED8; }
 .fdb-table tr:hover td{ background:#F8FBFF; }
 @media(max-width:700px){ .fdb-hero{ flex-direction:column; text-align:center; } .fdb-filters{ flex-direction:column; align-items:stretch; } }
+
+/* ---- Family dashboard: ขยายตัวอักษรบนจอคอม ---- */
+@media(min-width:1024px){
+  #db-family header h1{ font-size:24px; }
+  #db-family header p{ font-size:15px; }
+  #db-family .fdb-hero{ padding:20px 26px; }
+  #db-family .fdb-hero-title{ font-size:27px; }
+  #db-family .fdb-hero-sub{ font-size:15px; }
+  #db-family .fdb-total-card .lbl{ font-size:14px; }
+  #db-family .fdb-total-card .val{ font-size:52px; }
+  #db-family .fdb-filter-label{ font-size:15px; }
+  #db-family .fdb-filter-sel{ font-size:16px; padding:10px 12px; }
+  #db-family .fdb-reset{ font-size:15px; padding:9px 14px; }
+  #db-family .fdb-donut-name{ font-size:17px; margin-bottom:8px; }
+  #db-family .fdb-donut-leg{ font-size:14px; }
+  #db-family .fdb-donut-leg-dot{ width:10px; height:10px; }
+  #db-family .fdb-donut-sub{ font-size:14px; }
+  #db-family canvas[id^="fdb-donut-c"]{ width:132px !important; height:132px !important; }
+  #db-family .fdb-bar-title{ font-size:16px; }
+  #db-family .fdb-bar-row .lbl{ font-size:15px; width:104px; }
+  #db-family .fdb-bar-row .num{ font-size:16px; width:58px; }
+  #db-family .fdb-bar-row .track{ height:13px; }
+  #db-family .fdb-table-title{ font-size:17px; padding:14px 16px 8px; }
+  #db-family .fdb-table{ font-size:15px; }
+  #db-family .fdb-table th,
+  #db-family .fdb-table td{ font-size:15px; padding:11px 12px; }
+  #db-family .fdb-export{ font-size:15px; padding:12px; }
+}
 .map-fy-chip, .layer-btn{ border-radius:20px; border:1.5px solid var(--border); font-weight:600; padding:6px 13px; }
 .map-fy-chip.active{ background:var(--blue); border-color:var(--blue); color:#fff; }
 #map{ height:calc(100vh - 270px); }
@@ -2280,7 +2308,7 @@ function initMap() {
     map = L.map('map').setView([13.75, 100.55], 11);
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 18, attribution: '© OpenStreetMap' }).addTo(map);
     map.createPane('stationPane');
-    map.getPane('stationPane').style.zIndex = 640;
+    map.getPane('stationPane').style.zIndex = 650;
     map.getPane('stationPane').style.pointerEvents = 'auto';
     loadKmzData().then(drawKmzLayers).catch(() => {});
     map.on('movestart', () => { document.getElementById('map-hover-tip').style.display = 'none'; });
