@@ -74,60 +74,51 @@ function applyRows(data, project, status){
 }
 const fmtTime=d=>d.toLocaleString('th-TH',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'});
 
-// 1) Show the snapshot that the GitHub Action commits to data/<gid>.json (same origin, fast).
-// 2) Fetch the live Google Sheet in the background; re-render only if it differs.
-loadData = function(){
+// Default: load the snapshot that the GitHub Action deploys at data/<gid>.json (small, gzipped,
+// same origin). The refresh button passes {live:true} to read the Google Sheet directly.
+// If the snapshot is missing (e.g. Pages not deployed by the Action yet), fall back to live.
+loadData = function(opts){
+  const live = !!(opts && opts.live);
   const sequence = ++loadSequence, project = CURRENT_PROJECT;
   const current = () => sequence===loadSequence;
-  let shownKey = null;
   showLoading();
   el('app-message').hidden = true;
   el('total-count').textContent = 'กำลังโหลดข้อมูล…';
   if(!PLACES.length) el('cards').innerHTML = '<div class="skeleton-card" aria-label="กำลังโหลดข้อมูล"><i></i><i></i><i></i></div>'.repeat(4);
+  const show = (rows, status) => {
+    try{ applyRows(rows,project,status); }catch(err){ showError(err.message); }finally{ hideLoading(); }
+  };
 
-  const snapshot = fetch(`data/${project.gid}.json?t=${Math.floor(Date.now()/60000)}`)
-    .then(r=>r.ok?r.json():null)
-    .then(j=>{
-      if(!j || !current() || shownKey || !Array.isArray(j.rows) || j.rows.length<2)return;
-      try{
-        applyRows(j.rows,project,`ข้อมูล ณ ${fmtTime(new Date(j.fetched_at))} · กำลังอัปเดต…`);
-        shownKey=JSON.stringify(j.rows);
-        hideLoading();
-      }catch(e){}
-    })
-    .catch(()=>{});
-
-  const timeout = setTimeout(()=>{
-    if(!current())return;
-    loadSequence++;
-    hideLoading();
-    if(shownKey) el('total-count').textContent=`${PLACES.length.toLocaleString('th-TH')} สถานที่ · ใช้ข้อมูลสำรอง · อัปเดตสดไม่สำเร็จ`;
-    else showError('การเชื่อมต่อใช้เวลานานเกินไป โปรดลองใหม่');
-  },30000);
-  if(typeof Papa==='undefined'){clearTimeout(timeout);hideLoading();showError('โหลดเครื่องมืออ่านข้อมูลไม่สำเร็จ กรุณารีเฟรชหน้าเว็บ');return;}
-  Papa.parse(csvUrl(project), {
-    download:true, header:false, skipEmptyLines:true,
-    complete(res){
-      clearTimeout(timeout);
+  const loadLive = () => {
+    const timeout = setTimeout(()=>{
       if(!current())return;
-      try{
-        if(!res.data || !res.data.length)throw Error('ไม่พบข้อมูลในชีต');
-        loadedAt=fmtTime(new Date());
-        const key=JSON.stringify(res.data);
-        if(key===shownKey) el('total-count').textContent=`${PLACES.length.toLocaleString('th-TH')} สถานที่ · โหลดข้อมูล ${loadedAt}`;
-        else { shownKey=key; applyRows(res.data,project,`โหลดข้อมูล ${loadedAt}`); }
-      }catch(err){ if(!shownKey) showError(err.message); }finally{hideLoading();}
-    },
-    error(err){
-      clearTimeout(timeout);
-      snapshot.then(()=>{
+      loadSequence++;
+      hideLoading();showError('การเชื่อมต่อใช้เวลานานเกินไป โปรดลองใหม่');
+    },60000);
+    if(typeof Papa==='undefined'){clearTimeout(timeout);hideLoading();showError('โหลดเครื่องมืออ่านข้อมูลไม่สำเร็จ กรุณารีเฟรชหน้าเว็บ');return;}
+    Papa.parse(csvUrl(project), {
+      download:true, header:false, skipEmptyLines:true,
+      complete(res){
+        clearTimeout(timeout);
         if(!current())return;
-        hideLoading();
-        if(shownKey) el('total-count').textContent=`${PLACES.length.toLocaleString('th-TH')} สถานที่ · ใช้ข้อมูลสำรอง · อัปเดตสดไม่สำเร็จ`;
-        else showError(err.message||'ไม่สามารถเชื่อมต่อ Google Sheets ได้');
-      });
-    }
-  });
+        if(!res.data || !res.data.length){hideLoading();showError('ไม่พบข้อมูลในชีต');return;}
+        loadedAt=fmtTime(new Date());
+        show(res.data,`โหลดข้อมูลสด ${loadedAt}`);
+      },
+      error(err){clearTimeout(timeout);if(!current())return;hideLoading();showError(err.message||'ไม่สามารถเชื่อมต่อ Google Sheets ได้');}
+    });
+  };
+
+  if(live){ loadLive(); return; }
+  fetch(`data/${project.gid}.json?t=${Math.floor(Date.now()/60000)}`)
+    .then(r=>{ if(!r.ok)throw Error('HTTP '+r.status); return r.json(); })
+    .then(j=>{
+      if(!current())return;
+      if(!Array.isArray(j.rows) || j.rows.length<2)throw Error('snapshot ว่าง');
+      loadedAt=fmtTime(new Date(j.fetched_at));
+      show(j.rows,`ข้อมูล ณ ${loadedAt}`);
+    })
+    .catch(()=>{ if(current()) loadLive(); });
 };
 const originalSwitchProject=switchProject;
 switchProject=function(key){
@@ -341,7 +332,7 @@ el('map-search-input').value=savedView.get('mapQ')||'';
 const ICON_PATHS={refresh:'M20 7v5h-5 M4 17v-5h5 M6.1 6.1a8 8 0 0 1 13.2 3 M4.7 14.9a8 8 0 0 0 13.2 3',download:'M12 3v12 m-5-5 5 5 5-5 M5 16v5h14v-5',list:'M9 6h12 M9 12h12 M9 18h12 M3 6h1 M3 12h1 M3 18h1',map:'m3 6 6-3 6 3 6-3v15l-6 3-6-3-6 3V6Z M9 3v15 M15 6v15',chart:'M4 3v17h17 M8 15v-5 M13 15V6 M18 15v-8',share:'M14 3h7v7 M10 14 21 3 M10 4H4v16h16v-6'};
 function uiIcon(name){return `<svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="${ICON_PATHS[name]||ICON_PATHS.list}"/></svg>`;}
 document.querySelectorAll('.tabs .tab').forEach((b,i)=>b.innerHTML=uiIcon(['list','map','chart'][i])+b.textContent);
-document.querySelector('.header-tools button[onclick="loadData()"]').innerHTML=uiIcon('refresh')+'<span>รีเฟรช</span>';
+{const rb=document.querySelector('.header-tools button[onclick="loadData()"]');rb.innerHTML=uiIcon('refresh')+'<span>รีเฟรช</span>';rb.onclick=()=>loadData({live:true});rb.title='โหลดข้อมูลสดจาก Google Sheet';}
 document.querySelector('.header-tools button[onclick="exportDashboard(event)"]').innerHTML=uiIcon('download')+'<span>บันทึกภาพ</span>';
 document.querySelector('button[onclick="shareView()"]').innerHTML=uiIcon('share')+'แชร์มุมมอง';
 function renderTypeComparisons(stats){
