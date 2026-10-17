@@ -1,0 +1,43 @@
+name: Sync Google Sheet data
+
+# Builds the site plus a fresh data/<gid>.json snapshot and deploys it to GitHub Pages.
+# The snapshot is never committed, so the repo history does not grow.
+# Requires Settings → Pages → Source: "GitHub Actions".
+on:
+  push:
+    branches: [main]
+  schedule:
+    - cron: "*/15 * * * *"   # ทุก 15 นาที (GitHub อาจดีเลย์ได้เมื่อคิวแน่น)
+  workflow_dispatch:          # กดรันเองได้ที่แท็บ Actions
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Build site
+        run: |
+          mkdir _site
+          rsync -a --exclude '.git' --exclude '.github' --exclude 'scripts' --exclude 'backup' \
+                --exclude 'data' --exclude 'CLAUDE.md' --exclude '_site' ./ _site/
+          python3 scripts/fetch_sheets.py _site
+
+      - uses: actions/upload-pages-artifact@v4
+        with:
+          path: _site
+
+      - id: deployment
+        uses: actions/deploy-pages@v4

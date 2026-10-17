@@ -12,6 +12,7 @@ on:
 
 permissions:
   contents: read
+  actions: write    # ใช้กับขั้น keepalive ด้านล่าง
   pages: write
   id-token: write
 
@@ -41,3 +42,14 @@ jobs:
 
       - id: deployment
         uses: actions/deploy-pages@v4
+
+  # GitHub ปิด schedule ของรีโป public เองถ้าไม่มี commit 60 วัน
+  # เรียก API "enable" ทุกรอบตามเวลาเพื่อรีเซ็ตตัวนับ (วิธีเดียวกับ keepalive-workflow)
+  keepalive:
+    if: github.event_name == 'schedule'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Re-enable this workflow
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh api -X PUT "repos/${{ github.repository }}/actions/workflows/sync-sheets.yml/enable"
