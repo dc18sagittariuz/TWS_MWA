@@ -48,7 +48,15 @@ showError = function(message){
   el('total-count').textContent = 'โหลดข้อมูลไม่สำเร็จ';
 };
 // Render rows into the page. `status` is the text after "สถานที่ · " in the header.
-function applyRows(data, project, status){
+// keepState: re-render with more rows (older years arrived) without resetting what the user picked.
+const KEEP_IDS=['search','list-fy','flt-branch','flt-province','map-status','db-fy-sel','fdb-fy','fdb-month','fdb-province'];
+function restoreValues(ids,saved){
+  ids.forEach(id=>{const e=el(id),v=saved[id];if(!e||v==null)return;
+    if(e.tagName!=='SELECT'||[...e.options].some(o=>o.value===v))e.value=v;});
+}
+function applyRows(data, project, status, keepState){
+  const saved=keepState?Object.fromEntries(KEEP_IDS.map(id=>[id,el(id)?.value])):null;
+  const savedPage=page;
   buildHeaderMap(data[0],project.col);
   if(headerMap.name==null || headerMap.date==null)throw Error('ไม่พบคอลัมน์สถานที่หรือวันที่ กรุณาตรวจหัวตารางและสิทธิ์การแชร์ชีต');
   let rows=data.slice(1).map(normalize).filter(r=>r.name);
@@ -67,9 +75,16 @@ function applyRows(data, project, status){
     const requestedTab=savedView.get('tab');
     if(['list','map','dash'].includes(requestedTab))activateTab(requestedTab,false);
   }
-  page=0;render();mapInited=false;
+  if(saved)restoreValues(['search','list-fy','flt-branch','flt-province','map-status'],saved);
+  page=saved?savedPage:0;render();mapInited=false;
   if(el('view-map').classList.contains('active')){initMap();mapInited=true;}
-  if(el('view-dash').classList.contains('active'))initDash();
+  if(el('view-dash').classList.contains('active')){
+    initDash();
+    if(saved){
+      restoreValues(['db-fy-sel','fdb-fy','fdb-month','fdb-province'],saved);
+      if(project.key==='family')renderFamilyDash();else renderDash(el('db-fy-sel').value);
+    }
+  }
   restoreView=false;setProjectHeading();saveViewURL();
 }
 const fmtTime=d=>d.toLocaleString('th-TH',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'});
@@ -110,16 +125,38 @@ loadData = function(opts){
   };
 
   if(live){ loadLive(); return; }
-  fetch(`data/${project.gid}.json?t=${Math.floor(Date.now()/60000)}`)
-    .then(r=>{ if(!r.ok)throw Error('HTTP '+r.status); return r.json(); })
+  const getJson=name=>fetch(`data/${name}.json?t=${Math.floor(Date.now()/60000)}`)
+    .then(r=>{ if(!r.ok)throw Error('HTTP '+r.status); return r.json(); });
+  getJson(project.gid)
     .then(j=>{
       if(!current())return;
       if(!Array.isArray(j.rows) || j.rows.length<2)throw Error('snapshot ว่าง');
       loadedAt=fmtTime(new Date(j.fetched_at));
-      show(j.rows,`ข้อมูล ณ ${loadedAt}`);
+      const stale=Date.now()-new Date(j.fetched_at).getTime()>STALE_MS;
+      const base=`ข้อมูล ณ ${loadedAt}`;
+      show(j.rows, j.has_older ? `${base} · กำลังโหลดข้อมูลก่อนปีงบ ${j.recent_from_fy}…` : base);
+      if(stale)showStaleWarning();
+      if(!j.has_older)return;
+      return getJson(project.gid+'-older').then(o=>{
+        if(!current())return;
+        // A new deploy landed between the two requests: the halves may not line up, so start over.
+        if(o.fetched_at!==j.fetched_at){ loadData(); return; }
+        applyRows([j.rows[0], ...o.rows.slice(1), ...j.rows.slice(1)], project, base, true);
+        if(stale)showStaleWarning();
+      }).catch(()=>{
+        if(current())el('total-count').textContent=`${PLACES.length.toLocaleString('th-TH')} สถานที่ · ${base} · โหลดข้อมูลก่อนปีงบ ${j.recent_from_fy} ไม่สำเร็จ`;
+      });
     })
     .catch(()=>{ if(current()) loadLive(); });
 };
+
+// The GitHub Action refreshes data every 15 min; GitHub can delay runs by up to ~1 hour.
+// Older than this means the Action has probably been failing.
+const STALE_MS=3*60*60*1000;
+function showStaleWarning(){
+  el('app-message').hidden=false;
+  el('app-message').innerHTML=`<strong>ข้อมูลอาจไม่เป็นปัจจุบัน</strong><span>ข้อมูลอัปเดตล่าสุดเมื่อ ${escHtml(loadedAt)} ระบบอัปเดตอัตโนมัติอาจมีปัญหา</span><button class="tool-btn" onclick="loadData({live:true})">โหลดข้อมูลสด</button>`;
+}
 const originalSwitchProject=switchProject;
 switchProject=function(key){
   if(!PROJECTS[key])return;

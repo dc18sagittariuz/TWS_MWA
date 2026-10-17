@@ -2333,7 +2333,7 @@ function redrawMapMarkers() {
 
 function initMap() {
   if (!map) {
-    map = L.map('map').setView([13.75, 100.55], 11);
+    map = L.map('map', { preferCanvas: true }).setView([13.75, 100.55], 11); // canvas: ~2,300 markers stay smooth on mobile
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 18, attribution: '© OpenStreetMap' }).addTo(map);
     map.createPane('stationPane');
     map.getPane('stationPane').style.zIndex = 640;

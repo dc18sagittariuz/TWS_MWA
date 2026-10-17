@@ -7,6 +7,7 @@
 1. คัดลอกไฟล์เดิมไปไว้ที่ `backup/<path เดิม>.<YYYYMMDD-HHMM>` (เวลา Asia/Bangkok)
    - ตัวอย่าง: `index.html` → `backup/index.html.20261017-2325`
 2. ติด git tag ที่ commit ปัจจุบันก่อนแก้: `pre-edit-<YYYYMMDD-HHMM>` แล้ว push tag ด้วย
+   - ถ้า push tag ไม่ผ่าน (เช่น proxy ตอบ 403) ให้ข้ามขั้นนี้และแจ้งผู้ใช้ ไฟล์ใน `backup/` ใช้ย้อนกลับได้อยู่แล้ว
 3. Commit ไฟล์ backup พร้อมกับการแก้ไขใน commit เดียวกัน
 
 ไฟล์ที่สร้างใหม่ไม่ต้องสำรอง ห้ามแก้หรือลบไฟล์ใน `backup/`
