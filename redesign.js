@@ -47,51 +47,86 @@ showError = function(message){
   el('cards').innerHTML = '<div class="empty"><b>ยังไม่มีข้อมูลพร้อมแสดง</b><p>ตรวจการเชื่อมต่อ แล้วกดลองอีกครั้ง</p></div>';
   el('total-count').textContent = 'โหลดข้อมูลไม่สำเร็จ';
 };
+// Render rows into the page. `status` is the text after "สถานที่ · " in the header.
+function applyRows(data, project, status){
+  buildHeaderMap(data[0],project.col);
+  if(headerMap.name==null || headerMap.date==null)throw Error('ไม่พบคอลัมน์สถานที่หรือวันที่ กรุณาตรวจหัวตารางและสิทธิ์การแชร์ชีต');
+  let rows=data.slice(1).map(normalize).filter(r=>r.name);
+  if(project.filterCol)rows=rows.filter(r=>project.filterValues.includes(r[project.filterCol]));
+  ROWS=rows;groupByPlace();buildListFilters();
+  const previousFY=el('list-fy').value;
+  el('list-fy').innerHTML='<option value="all">ทุกปี</option>'+getFYOptions().map(y=>`<option value="${y}">ปีงบ ${y}</option>`).join('');
+  if([...el('list-fy').options].some(o=>o.value===previousFY))el('list-fy').value=previousFY;
+  el('total-count').textContent=`${PLACES.length.toLocaleString('th-TH')} สถานที่ · ${status}`;
+  if(restoreView){
+    el('search').value=savedView.get('q')||'';
+    currentFilter=['all','pass','fail','wait'].includes(savedView.get('status'))?savedView.get('status'):'all';
+    for(const [id,key] of [['list-fy','fy'],['flt-branch','branch'],['flt-province','province']]){
+      const v=savedView.get(key);if(v&&[...el(id).options].some(o=>o.value===v))el(id).value=v;
+    }
+    const requestedTab=savedView.get('tab');
+    if(['list','map','dash'].includes(requestedTab))activateTab(requestedTab,false);
+  }
+  page=0;render();mapInited=false;
+  if(el('view-map').classList.contains('active')){initMap();mapInited=true;}
+  if(el('view-dash').classList.contains('active'))initDash();
+  restoreView=false;setProjectHeading();saveViewURL();
+}
+const fmtTime=d=>d.toLocaleString('th-TH',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'});
+
+// 1) Show the snapshot that the GitHub Action commits to data/<gid>.json (same origin, fast).
+// 2) Fetch the live Google Sheet in the background; re-render only if it differs.
 loadData = function(){
   const sequence = ++loadSequence, project = CURRENT_PROJECT;
+  const current = () => sequence===loadSequence;
+  let shownKey = null;
   showLoading();
   el('app-message').hidden = true;
   el('total-count').textContent = 'กำลังโหลดข้อมูล…';
   if(!PLACES.length) el('cards').innerHTML = '<div class="skeleton-card" aria-label="กำลังโหลดข้อมูล"><i></i><i></i><i></i></div>'.repeat(4);
+
+  const snapshot = fetch(`data/${project.gid}.json?t=${Math.floor(Date.now()/60000)}`)
+    .then(r=>r.ok?r.json():null)
+    .then(j=>{
+      if(!j || !current() || shownKey || !Array.isArray(j.rows) || j.rows.length<2)return;
+      try{
+        applyRows(j.rows,project,`ข้อมูล ณ ${fmtTime(new Date(j.fetched_at))} · กำลังอัปเดต…`);
+        shownKey=JSON.stringify(j.rows);
+        hideLoading();
+      }catch(e){}
+    })
+    .catch(()=>{});
+
   const timeout = setTimeout(()=>{
-    if(sequence!==loadSequence)return;
+    if(!current())return;
     loadSequence++;
-    hideLoading();showError('การเชื่อมต่อใช้เวลานานเกินไป โปรดลองใหม่');
+    hideLoading();
+    if(shownKey) el('total-count').textContent=`${PLACES.length.toLocaleString('th-TH')} สถานที่ · ใช้ข้อมูลสำรอง · อัปเดตสดไม่สำเร็จ`;
+    else showError('การเชื่อมต่อใช้เวลานานเกินไป โปรดลองใหม่');
   },30000);
   if(typeof Papa==='undefined'){clearTimeout(timeout);hideLoading();showError('โหลดเครื่องมืออ่านข้อมูลไม่สำเร็จ กรุณารีเฟรชหน้าเว็บ');return;}
   Papa.parse(csvUrl(project), {
     download:true, header:false, skipEmptyLines:true,
     complete(res){
       clearTimeout(timeout);
-      if(sequence!==loadSequence)return;
+      if(!current())return;
       try{
         if(!res.data || !res.data.length)throw Error('ไม่พบข้อมูลในชีต');
-        buildHeaderMap(res.data[0],project.col);
-        if(headerMap.name==null || headerMap.date==null)throw Error('ไม่พบคอลัมน์สถานที่หรือวันที่ กรุณาตรวจหัวตารางและสิทธิ์การแชร์ชีต');
-        let rows=res.data.slice(1).map(normalize).filter(r=>r.name);
-        if(project.filterCol)rows=rows.filter(r=>project.filterValues.includes(r[project.filterCol]));
-        ROWS=rows;groupByPlace();buildListFilters();
-        const previousFY=el('list-fy').value;
-        el('list-fy').innerHTML='<option value="all">ทุกปี</option>'+getFYOptions().map(y=>`<option value="${y}">ปีงบ ${y}</option>`).join('');
-        if([...el('list-fy').options].some(o=>o.value===previousFY))el('list-fy').value=previousFY;
-        loadedAt=new Date().toLocaleString('th-TH',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'});
-        el('total-count').textContent=`${PLACES.length.toLocaleString('th-TH')} สถานที่ · โหลดข้อมูล ${loadedAt}`;
-        if(restoreView){
-          el('search').value=savedView.get('q')||'';
-          currentFilter=['all','pass','fail','wait'].includes(savedView.get('status'))?savedView.get('status'):'all';
-          for(const [id,key] of [['list-fy','fy'],['flt-branch','branch'],['flt-province','province']]){
-            const v=savedView.get(key);if(v&&[...el(id).options].some(o=>o.value===v))el(id).value=v;
-          }
-          const requestedTab=savedView.get('tab');
-          if(['list','map','dash'].includes(requestedTab))activateTab(requestedTab,false);
-        }
-        page=0;render();mapInited=false;
-        if(el('view-map').classList.contains('active')){initMap();mapInited=true;}
-        if(el('view-dash').classList.contains('active'))initDash();
-        restoreView=false;setProjectHeading();saveViewURL();
-      }catch(err){showError(err.message);}finally{hideLoading();}
+        loadedAt=fmtTime(new Date());
+        const key=JSON.stringify(res.data);
+        if(key===shownKey) el('total-count').textContent=`${PLACES.length.toLocaleString('th-TH')} สถานที่ · โหลดข้อมูล ${loadedAt}`;
+        else { shownKey=key; applyRows(res.data,project,`โหลดข้อมูล ${loadedAt}`); }
+      }catch(err){ if(!shownKey) showError(err.message); }finally{hideLoading();}
     },
-    error(err){clearTimeout(timeout);if(sequence!==loadSequence)return;hideLoading();showError(err.message||'ไม่สามารถเชื่อมต่อ Google Sheets ได้');}
+    error(err){
+      clearTimeout(timeout);
+      snapshot.then(()=>{
+        if(!current())return;
+        hideLoading();
+        if(shownKey) el('total-count').textContent=`${PLACES.length.toLocaleString('th-TH')} สถานที่ · ใช้ข้อมูลสำรอง · อัปเดตสดไม่สำเร็จ`;
+        else showError(err.message||'ไม่สามารถเชื่อมต่อ Google Sheets ได้');
+      });
+    }
   });
 };
 const originalSwitchProject=switchProject;

@@ -1,0 +1,39 @@
+name: Sync Google Sheet data
+
+on:
+  schedule:
+    - cron: "*/15 * * * *"   # ทุก 15 นาที (GitHub อาจดีเลย์ได้เมื่อคิวแน่น)
+  workflow_dispatch:          # กดรันเองได้ที่แท็บ Actions
+
+permissions:
+  contents: write
+
+concurrency:
+  group: sync-sheets
+  cancel-in-progress: false
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Fetch sheets
+        run: python scripts/fetch_sheets.py
+
+      - name: Commit changes
+        if: success() || failure()
+        run: |
+          git add data/
+          if git diff --cached --quiet; then
+            echo "No data changes"
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898283+github-actions[bot]@users.noreply.github.com"
+          git commit -m "Update sheet data snapshot"
+          git push
