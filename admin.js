@@ -1,6 +1,6 @@
 /* Admin: ซ่อน/แสดงโครงการสำหรับผู้ชมทั่วไป
    ค่าเก็บใน Google Apps Script (ดู scripts/admin-apps-script.gs) — ใส่ URL Web app ด้านล่าง */
-const ADMIN_API = ''; // เช่น 'https://script.google.com/macros/s/XXXX/exec'
+const ADMIN_API = 'https://script.google.com/macros/s/AKfycbw5J2inf6zU3VCBZv00ywG0xNTnZcsTiyfHNWc3M7fUH945NoYMn2lCoT92cCiy9h6CjA/exec'; // เช่น 'https://script.google.com/macros/s/XXXX/exec'
 
 let HIDDEN = new Set();
 let adminPw = '';
