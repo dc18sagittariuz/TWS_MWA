@@ -27,7 +27,7 @@ function applyVisibility() {
     const o = document.querySelector(`#project-select option[value="${k}"]`);
     if (o) o.hidden = o.disabled = !canView(k);
   });
-  document.getElementById('admin-login').hidden = !!adminPw;
+  document.getElementById('admin-login').style.display = adminPw ? 'none' : 'flex';
   const panel = document.getElementById('admin-panel');
   panel.hidden = !adminPw;
   panel.innerHTML = adminPw ? '<b>แสดงต่อผู้ชมทั่วไป</b>' + Object.values(PROJECTS).map(p =>
@@ -64,6 +64,18 @@ async function toggleHidden(key, hide, el) {
   el.disabled = false;
   if (!r.ok) { el.checked = !hide; return alert(r.error || 'บันทึกไม่สำเร็จ'); }
   setHidden(r.hidden); applyVisibility();
+}
+
+// ปุ่ม 🔒 บนแถบหัวเว็บ: เปิดเมนูด้านข้างที่มีช่องเข้าสู่ระบบผู้ดูแล
+{
+  const tools = document.querySelector('.header-tools');
+  if (tools) {
+    const b = document.createElement('button');
+    b.type = 'button'; b.className = 'tool-btn'; b.textContent = '🔒';
+    b.title = 'ผู้ดูแลระบบ'; b.setAttribute('aria-label', 'ผู้ดูแลระบบ');
+    b.onclick = () => { openSideMenu(); setTimeout(() => document.getElementById(adminPw ? 'admin-panel' : 'admin-pw')?.focus?.(), 300); };
+    tools.appendChild(b);
+  }
 }
 
 // ก่อนโหลดข้อมูลครั้งแรก: ถ้าโครงการเริ่มต้นถูกซ่อน (จากค่าที่จำไว้) ให้เปลี่ยนโดยไม่โหลดซ้ำ
