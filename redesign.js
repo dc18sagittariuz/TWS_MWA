@@ -150,12 +150,12 @@ loadData = function(opts){
     .catch(()=>{ if(current()) loadLive(); });
 };
 
-// The GitHub Action refreshes data every 15 min; GitHub can delay runs by up to ~1 hour.
-// Older than this means the Action has probably been failing.
-const STALE_MS=3*60*60*1000;
+// Apps Script (scripts/sync-trigger.gs) dispatches the Action every 15 min; GitHub's own
+// cron alone runs only every 2-7 h. Older than this means the trigger has really stopped.
+const STALE_MS=2*60*60*1000;
 function showStaleWarning(){
   el('app-message').hidden=false;
-  el('app-message').innerHTML=`<strong>ข้อมูลอาจไม่เป็นปัจจุบัน</strong><span>ข้อมูลอัปเดตล่าสุดเมื่อ ${escHtml(loadedAt)} ระบบอัปเดตอัตโนมัติอาจมีปัญหา</span><button class="tool-btn" onclick="loadData({live:true})">โหลดข้อมูลสด</button>`;
+  el('app-message').innerHTML=`<strong>ข้อมูลอาจไม่เป็นปัจจุบัน</strong><span>อัปเดตล่าสุดเมื่อ ${escHtml(loadedAt)} กด “โหลดข้อมูลสด” เพื่อดูข้อมูลล่าสุดจากชีต</span><button class="tool-btn" onclick="loadData({live:true})">โหลดข้อมูลสด</button>`;
 }
 const originalSwitchProject=switchProject;
 switchProject=function(key){
