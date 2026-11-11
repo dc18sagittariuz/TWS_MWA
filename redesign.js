@@ -89,9 +89,10 @@ function applyRows(data, project, status, keepState){
 }
 const fmtTime=d=>d.toLocaleString('th-TH',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'});
 
-// Default: load the snapshot that the GitHub Action deploys at data/<gid>.json (small, gzipped,
-// same origin). The refresh button passes {live:true} to read the Google Sheet directly.
-// If the snapshot is missing (e.g. Pages not deployed by the Action yet), fall back to live.
+// Default: load the snapshot the GitHub Action force-pushes to the `data` branch every 15 min,
+// served by raw.githubusercontent.com (CORS ok, gzipped, ~5 min cache). The refresh button passes
+// {live:true} to read the Google Sheet directly. Missing or stale snapshot → load live automatically.
+const SNAPSHOT_BASE='https://raw.githubusercontent.com/dc18sagittariuz/TWS_MWA/data/';
 loadData = function(opts){
   const live = !!(opts && opts.live);
   const sequence = ++loadSequence, project = CURRENT_PROJECT;
@@ -100,32 +101,35 @@ loadData = function(opts){
   el('app-message').hidden = true;
   el('total-count').textContent = 'กำลังโหลดข้อมูล…';
   if(!PLACES.length) el('cards').innerHTML = '<div class="skeleton-card" aria-label="กำลังโหลดข้อมูล"><i></i><i></i><i></i></div>'.repeat(4);
-  const show = (rows, status) => {
-    try{ applyRows(rows,project,status); }catch(err){ showError(err.message); }finally{ hideLoading(); }
+  const show = (rows, status, keep) => {
+    try{ applyRows(rows,project,status,keep); }catch(err){ showError(err.message); }finally{ hideLoading(); }
   };
 
-  const loadLive = () => {
+  // bg: a snapshot is already on screen, so a failed live load keeps it instead of clearing the page.
+  const loadLive = (bg) => {
+    const fail = msg => { hideLoading(); if(bg){ el('total-count').textContent=`${PLACES.length.toLocaleString('th-TH')} สถานที่ · ข้อมูล ณ ${loadedAt} · โหลดข้อมูลสดไม่สำเร็จ`; } else showError(msg); };
     const timeout = setTimeout(()=>{
       if(!current())return;
       loadSequence++;
-      hideLoading();showError('การเชื่อมต่อใช้เวลานานเกินไป โปรดลองใหม่');
+      fail('การเชื่อมต่อใช้เวลานานเกินไป โปรดลองใหม่');
     },60000);
-    if(typeof Papa==='undefined'){clearTimeout(timeout);hideLoading();showError('โหลดเครื่องมืออ่านข้อมูลไม่สำเร็จ กรุณารีเฟรชหน้าเว็บ');return;}
+    if(typeof Papa==='undefined'){clearTimeout(timeout);fail('โหลดเครื่องมืออ่านข้อมูลไม่สำเร็จ กรุณารีเฟรชหน้าเว็บ');return;}
     Papa.parse(csvUrl(project), {
       download:true, header:false, skipEmptyLines:true,
       complete(res){
         clearTimeout(timeout);
         if(!current())return;
-        if(!res.data || !res.data.length){hideLoading();showError('ไม่พบข้อมูลในชีต');return;}
+        if(!res.data || !res.data.length){fail('ไม่พบข้อมูลในชีต');return;}
         loadedAt=fmtTime(new Date());
-        show(res.data,`โหลดข้อมูลสด ${loadedAt}`);
+        el('app-message').hidden=true;
+        show(res.data,`โหลดข้อมูลสด ${loadedAt}`,bg);
       },
-      error(err){clearTimeout(timeout);if(!current())return;hideLoading();showError(err.message||'ไม่สามารถเชื่อมต่อ Google Sheets ได้');}
+      error(err){clearTimeout(timeout);if(!current())return;fail(err.message||'ไม่สามารถเชื่อมต่อ Google Sheets ได้');}
     });
   };
 
   if(live){ loadLive(); return; }
-  const getJson=name=>fetch(`data/${name}.json?t=${Math.floor(Date.now()/60000)}`)
+  const getJson=name=>fetch(`${SNAPSHOT_BASE}${name}.json?t=${Math.floor(Date.now()/60000)}`)
     .then(r=>{ if(!r.ok)throw Error('HTTP '+r.status); return r.json(); });
   getJson(project.gid)
     .then(j=>{
@@ -134,15 +138,20 @@ loadData = function(opts){
       loadedAt=fmtTime(new Date(j.fetched_at));
       const stale=Date.now()-new Date(j.fetched_at).getTime()>STALE_MS;
       const base=`ข้อมูล ณ ${loadedAt}`;
+      if(stale){
+        // Sync stopped: show the snapshot now, then replace it with live data in the background.
+        show(j.rows, `${base} · กำลังโหลดข้อมูลสด…`);
+        showStaleWarning();
+        loadLive(true);
+        return;
+      }
       show(j.rows, j.has_older ? `${base} · กำลังโหลดข้อมูลก่อนปีงบ ${j.recent_from_fy}…` : base);
-      if(stale)showStaleWarning();
       if(!j.has_older)return;
       return getJson(project.gid+'-older').then(o=>{
         if(!current())return;
         // A new deploy landed between the two requests: the halves may not line up, so start over.
         if(o.fetched_at!==j.fetched_at){ loadData(); return; }
         applyRows([j.rows[0], ...o.rows.slice(1), ...j.rows.slice(1)], project, base, true);
-        if(stale)showStaleWarning();
       }).catch(()=>{
         if(current())el('total-count').textContent=`${PLACES.length.toLocaleString('th-TH')} สถานที่ · ${base} · โหลดข้อมูลก่อนปีงบ ${j.recent_from_fy} ไม่สำเร็จ`;
       });
@@ -155,7 +164,7 @@ loadData = function(opts){
 const STALE_MS=2*60*60*1000;
 function showStaleWarning(){
   el('app-message').hidden=false;
-  el('app-message').innerHTML=`<strong>ข้อมูลอาจไม่เป็นปัจจุบัน</strong><span>อัปเดตล่าสุดเมื่อ ${escHtml(loadedAt)} กด “โหลดข้อมูลสด” เพื่อดูข้อมูลล่าสุดจากชีต</span><button class="tool-btn" onclick="loadData({live:true})">โหลดข้อมูลสด</button>`;
+  el('app-message').innerHTML=`<strong>ข้อมูลอาจไม่เป็นปัจจุบัน</strong><span>อัปเดตล่าสุดเมื่อ ${escHtml(loadedAt)} กำลังโหลดข้อมูลล่าสุดจากชีตให้อัตโนมัติ…</span><button class="tool-btn" onclick="loadData({live:true})">โหลดข้อมูลสด</button>`;
 }
 const originalSwitchProject=switchProject;
 switchProject=function(key){
