@@ -2537,7 +2537,8 @@ async function saveDashJpeg(e) {
   const parent = dash.parentNode;
   const marker = document.createComment('cap');
   parent.insertBefore(marker, dash);
-  holder.appendChild(header.cloneNode(true));
+  // ครอบครัวน้ำประปามีชื่อโครงการในกล่องหัวแดชบอร์ดอยู่แล้ว จึงไม่ใส่ส่วนหัวของหน้าเว็บ
+  if (CURRENT_PROJECT.key !== 'family') holder.appendChild(header.cloneNode(true));
   holder.appendChild(dash);
   document.body.insertBefore(holder, document.body.firstChild);
   return svgsToImgs(holder).then(() => html2canvas(holder, {
