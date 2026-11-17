@@ -497,6 +497,7 @@ header button[onclick*="openSideMenu"]:hover{ background:rgba(255,255,255,.26)!i
 .fdb-table-title{ background:transparent; color:#0F172A; font-size:13px; padding:12px 14px 6px; }
 .fdb-table th{ background:#F1F6FE; color:#1D4ED8; }
 .fdb-table tr:hover td{ background:#F8FBFF; }
+#fdb-table-right thead th{ white-space:normal; vertical-align:bottom; }
 @media(max-width:700px){ .fdb-hero{ flex-direction:column; text-align:center; } .fdb-filters{ flex-direction:column; align-items:stretch; } }
 
 /* ---- Family dashboard: ขยายตัวอักษรบนจอคอม ---- */
@@ -845,6 +846,10 @@ header button[onclick*="openSideMenu"]:hover{ background:rgba(255,255,255,.26)!i
 <script>
 const SHEET_ID = "1qfz3YeTqTrsmtzaEkXvRv7iZmLRHIp0pGxCI4s0fuyU";
 
+// ราชการ + อื่นๆ ตั้งแต่ปีงบ 2570 นับรวมในโครงการครอบครัวน้ำประปา
+const GOV_OTHER = 'หน่วยงานภาครัฐอื่นๆ';
+const GOV_OTHER_FROM_FY = 2570;
+
 const PROJECTS = {
   monitor: {
     key: 'monitor',
@@ -889,7 +894,7 @@ const PROJECTS = {
     icon: '🏠',
     hasType: true,
     filterCol: 'placeType2',
-    filterValues: ['สถานศึกษา', 'สถานพยาบาล'],
+    filterValues: ['สถานศึกษา', 'สถานพยาบาล', GOV_OTHER],
     col: {
       code:['รหัสสถ','รหัสสถานที่'], name:['สถานที่เก็บ','สถานที่'], type:['ประเภท'], point:['จุดเก็บ'],
       date:['วันเก็บ','วันที่'], cl:['คลอรีน'], turb:['ความขุ่น','ความขุ'],
@@ -1031,14 +1036,17 @@ function buildHeaderMap(headerRow, colDef) {
 function gg(row, key) { const i = headerMap[key]; return (i != null && row[i] != null) ? String(row[i]).trim() : ''; }
 function normalize(row) {
   const date = normDate(gg(row,'date'));
+  const fy = fyOf(date);
+  let placeType2 = gg(row,'placeType2');
+  if (fy >= GOV_OTHER_FROM_FY && gg(row,'placeType') === 'ราชการ' && placeType2.replace(/\s/g,'') === 'อื่นๆ') placeType2 = GOV_OTHER;
   return {
     code: gg(row,'code'), placeCode: gg(row,'placeCode'), name: gg(row,'name'), type: gg(row,'type'), point: gg(row,'point'),
     date, cl: gg(row,'cl'), turb: gg(row,'turb'), ph: gg(row,'ph'),
     cond: gg(row,'cond'), iron: gg(row,'iron'), color: gg(row,'color'),
     coliform: gg(row,'coliform'), ecoli: gg(row,'ecoli'), quality: gg(row,'quality'),
     coord: gg(row,'coord'), branch: gg(row,'branch'),
-    placeType: gg(row,'placeType'), placeType2: gg(row,'placeType2'), province: gg(row,'province'),
-    fy: fyOf(date)
+    placeType: gg(row,'placeType'), placeType2, province: gg(row,'province'),
+    fy
   };
 }
 // คำนวณปีงบจากสตริงตรงๆ ไม่ต้องสร้าง Date object (เร็วกว่า, ใช้ในลูปจำนวนมาก)
@@ -2018,7 +2026,7 @@ function _paramPlaceList(param) {
   const byPlace = {};
   rows.forEach(r => {
     const k = r.placeCode||r.name;
-    if (!byPlace[k]) byPlace[k] = {name:r.name, icon:r.placeType2==='สถานพยาบาล'?'🏥':'🏫', date:r.date, n:0, tags:new Set()};
+    if (!byPlace[k]) byPlace[k] = {name:r.name, icon:r.placeType2==='สถานพยาบาล'?'🏥':r.placeType2===GOV_OTHER?'🏛️':'🏫', date:r.date, n:0, tags:new Set()};
     byPlace[k].n++;
     if (r.date > byPlace[k].date) byPlace[k].date = r.date;
     Object.keys(allFails).forEach(p => { if (p!==param && allFails[p].includes(r)) byPlace[k].tags.add(p); });
@@ -2076,7 +2084,7 @@ function familyVisitKey(r) { return JSON.stringify([r.placeCode || r.code || r.n
 function renderFamilyDash() {
   if (!ROWS.length) return;
   const rows = getFamilyRows();
-  const PLACE_TYPES = ['สถานศึกษา','สถานพยาบาล'];
+  const PLACE_TYPES = ['สถานศึกษา','สถานพยาบาล', ...(rows.some(r => r.placeType2 === GOV_OTHER) ? [GOV_OTHER] : [])];
   const TYPE_MERGE = {
     'น้ำประปาต่อตรง':'น้ำประปาต่อตรง',
     'น้ำผ่านบ่อ/ถังพักน้ำ':'ถังพัก/บ่อพัก',
