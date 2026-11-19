@@ -1929,6 +1929,10 @@ function initDash() {
 
 /* ===== FAMILY DASHBOARD ===== */
 const THAI_MONTHS = ['ม.ค.','ก.พ.','มี.ค.','เม.ย.','พ.ค.','มิ.ย.','ก.ค.','ส.ค.','ก.ย.','ต.ค.','พ.ย.','ธ.ค.'];
+function fmtThaiDate(iso) {
+  const [y,m,d] = iso.split('-').map(Number);
+  return `${d} ${THAI_MONTHS[m-1]} ${y+543}`;
+}
 const MONTH_NAMES = ['01. ตุลาคม','02. พฤศจิกายน','03. ธันวาคม','04. มกราคม','05. กุมภาพันธ์','06. มีนาคม','07. เมษายน','08. พฤษภาคม','09. มิถุนายน','10. กรกฎาคม','11. สิงหาคม','12. กันยายน'];
 
 function getFYMonth(dateStr) {
@@ -2108,7 +2112,9 @@ function renderFamilyDash() {
   const totalPlaces = Object.values(placeTypeCount).reduce((a,b)=>a+b,0);
   document.getElementById('fdb-total').textContent = totalPlaces.toLocaleString('th-TH');
   const metaEl = document.getElementById('fdb-meta');
-  if (metaEl) metaEl.textContent = rows.length.toLocaleString('th-TH') + ' รายการ';
+  const latest = rows.reduce((a,r)=>/^\d{4}-\d{2}-\d{2}$/.test(r.date) && r.date > a ? r.date : a, '');
+  if (metaEl) metaEl.textContent = rows.length.toLocaleString('th-TH') + ' รายการ' +
+    (latest ? ' · ข้อมูลถึง ' + fmtThaiDate(latest) : '');
 
   // คำนวณ lStats (ราย type ดิบ) ครั้งเดียว ใช้ร่วมกันทั้งโดนัทและตาราง
   const leftTypes = ['น้ำประปาต่อตรง','น้ำผ่านบ่อ/ถังพักน้ำ','น้ำผ่านเครื่องกรอง','น้ำผ่านเครื่องกรองจากตู้น้ำเย็น'];
