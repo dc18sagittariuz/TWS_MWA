@@ -561,14 +561,6 @@ header button[onclick*="openSideMenu"]:hover{ background:rgba(255,255,255,.26)!i
       </div>
       <span class="smenu-check">✓</span>
     </div>
-    <div class="smenu-item" id="smenu-fountain" onclick="switchProject('fountain')">
-      <div class="smenu-icon" style="background:#00875A">🚰</div>
-      <div class="smenu-label">
-        <div class="smenu-name">แท่นน้ำประปา</div>
-        <div class="smenu-sub">ข้อมูลคุณภาพน้ำแท่นน้ำ</div>
-      </div>
-      <span class="smenu-check" style="display:none">✓</span>
-    </div>
     <div class="smenu-item" id="smenu-family" onclick="switchProject('family')">
       <div class="smenu-icon" style="background:#2563EB">🏠</div>
       <div class="smenu-label">
@@ -598,7 +590,7 @@ header button[onclick*="openSideMenu"]:hover{ background:rgba(255,255,255,.26)!i
 <header id="main-header">
   <div class="brand-mark" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none"><path d="M12 3C9 7 5 11 5 15a7 7 0 0 0 14 0c0-4-4-8-7-12Z" stroke="currentColor" stroke-width="1.8"/><path d="M8 15a4 4 0 0 0 4 4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg></div>
   <div class="header-copy"><div class="eyebrow">MWA · WATER QUALITY</div><h1><span id="header-icon" hidden></span><span id="header-title">โครงการ Monitor</span></h1><p id="total-count" aria-live="polite">กำลังโหลดข้อมูล…</p></div>
-  <div class="header-tools"><label class="project-control">โครงการ<select id="project-select" onchange="switchProject(this.value)"><option value="monitor">Monitor</option><option value="fountain">แท่นน้ำประปา</option><option value="family">ครอบครัวน้ำประปา</option></select></label><button class="tool-btn" onclick="loadData()" aria-label="โหลดข้อมูลใหม่" title="โหลดข้อมูลใหม่">↻ <span>รีเฟรช</span></button><button class="tool-btn" onclick="exportDashboard(event)" title="บันทึก Dashboard">↓ <span>บันทึกภาพ</span></button></div>
+  <div class="header-tools"><label class="project-control">โครงการ<select id="project-select" onchange="switchProject(this.value)"><option value="monitor">Monitor</option><option value="family">ครอบครัวน้ำประปา</option></select></label><button class="tool-btn" onclick="loadData()" aria-label="โหลดข้อมูลใหม่" title="โหลดข้อมูลใหม่">↻ <span>รีเฟรช</span></button><button class="tool-btn" onclick="exportDashboard(event)" title="บันทึก Dashboard">↓ <span>บันทึกภาพ</span></button></div>
 </header>
 
 <div id="load-overlay"><div class="lo-spin"></div><div class="lo-text">กำลังโหลดข้อมูล…</div></div>
@@ -868,23 +860,6 @@ const PROJECTS = {
       ph:['pH','ph','PH'], cond:['การนำไฟฟ้า','การนำ'], iron:['เหล็ก'],
       color:['สีปรากฏ','สี'], coliform:['Coliform','coliform'],
       ecoli:['E.coli','E. coli','e.coli'], quality:['คุณภาพน้ำ','คุณภาพ'], coord:['พิกัด'],
-      branch:['สาขา'],
-    }
-  },
-  fountain: {
-    key: 'fountain',
-    name: 'แท่นน้ำประปา',
-    sheet: 'fountain',
-    gid: '1693716309',
-    color: '#00875A',
-    icon: '🚰',
-    hasType: false,
-    col: {
-      code:['รหัสด้วง'], placeCode:['รหัสสถานที่','รหัสสถ'], name:['สถานที่'], type:['ประเภทน้ำ','ประเภท'], point:['จุดเก็บ'],
-      date:['วันที่เก็บ','วันเก็บ','วันที่'], cl:['คลอรีน'], turb:['ความขุ่น','ความขุ'],
-      ph:['pH','ph','PH'], cond:['ความนำไฟฟ้า','การนำไฟฟ้า','การนำ'], iron:['เหล็ก'],
-      color:['สีปรากฏ','สี'], coliform:['โคลิฟอร์ม','Coliform','coliform'],
-      ecoli:['อีโคไล','E.coli','e.coli'], quality:['คุณภาพน้ำ','คุณภาพ'], coord:['latlong','พิกัด'],
       branch:['สาขา'],
     }
   },

@@ -12,7 +12,7 @@ const adminApi = b => fetch(ADMIN_API, { method: 'POST', headers: { 'Content-Typ
   .then(r => r.json()).catch(() => ({}));
 
 function setHidden(list) {
-  HIDDEN = new Set(list || []);
+  HIDDEN = new Set((list || []).filter(k => PROJECTS[k]));
   try { localStorage.setItem('hiddenProjects', JSON.stringify([...HIDDEN])); } catch (e) {}
 }
 async function loadVisibility() {
